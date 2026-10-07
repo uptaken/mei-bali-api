@@ -1,4 +1,5 @@
 <?php
+use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClientController;
@@ -21,7 +22,8 @@ use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WAController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\WhatsAppTemplateController;
-use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\ExportController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -36,6 +38,10 @@ Route::prefix('wa')->group(function () {
 	Route::get('/state', [WAController::class, 'get_state']);
 	Route::get('/number/search', [WAController::class, 'get_number_search']);
 
+});
+
+Route::prefix('export')->group(function () {
+	Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
