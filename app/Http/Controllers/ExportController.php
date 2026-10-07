@@ -62,22 +62,14 @@ use App\Jobs\SendEmailOrderSponsorshipJob;
 
 class ExportController extends BaseController{
 	public function order_pdf(Request $request){
+		$data = $request->validate([
+			'order_id' => ['required', 'integer', 'exists:orders,id'],
+		]);
+		$order = Order::with(['client', 'itineraryDays.activities'])
+			->findOrFail($data['order_id']);
 
-		// dd($arr_tournament1);
-
-
-// 		return view('exports.tournament_pdf_v2_1', [
-// 			'arr_tournament' => $arr_tournament1,
-// 			'arr_group' => $arr_group,
-//
-// 			'event_category_sport' => !empty($event_category_sport_category) ? $event_category_sport_category->event_category_sport : $event_category_sport,
-// 			'event_category_sport_category' => !empty($event_category_sport_category) ? $event_category_sport_category : null,
-// 			'venue' => !empty($venue) ? $venue : null,
-// 			'type' => !empty($type) ? $type : null,
-//
-// 		]);
 		return NEWPDF1::view('exports.order_pdf', [
-
+			'order' => $order,
 		])
 			->withBrowsershot(function ($browsershot) {
 				$browsershot->noSandbox()
@@ -88,8 +80,7 @@ class ExportController extends BaseController{
 			->portrait()
 			->format('a4')
 			->margins(10, 10, 10, 10)
-			// ->margins(100, 100, 100, 100, Unit::Pixel)
-			->name('order.pdf');
-			// ->download();
+			->name("order-{$order->kode}.pdf")
+			->download();
 	}
 }

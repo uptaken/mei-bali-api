@@ -41,7 +41,7 @@ Route::prefix('wa')->group(function () {
 });
 
 Route::prefix('export')->group(function () {
-	Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
+	Route::get('/order/pdf', [ExportController::class, 'order_pdf'])->middleware('auth:sanctum');
 });
 
 Route::middleware('auth:sanctum')->group(function () {

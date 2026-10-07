@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
 	<meta charset="utf-8">
-	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<style>
-	html{
-		font-size: 13px;
-		background-color: white;
-	}
+		html {
+			font-size: 13px;
+			background-color: white;
+		}
 	</style>
 	@yield('style')
 	@yield('top_script')
@@ -19,9 +19,6 @@
 	<div class="">
 	@yield('content')
 	</div>
-
-	<script src="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.js"></script>
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.0/moment.min.js"></script>
 
 	@yield('script')
 </body>
