@@ -1,0 +1,2 @@
+[2026-09-22 23:01:12] local.INFO: Konfirmasi supplier di-queue {"order":"ORD-0241","to":"+62 812 3811 2200"} 
+[2026-09-22 23:01:24] local.INFO: WA (simulasi — FONNTE_ENABLED=false atau token kosong) {"to":"6281238112200","message":"Halo Wayan Sudarsana, mohon konfirmasi ketersediaan untuk order ORD-0241 pada 06 Okt 2026 pukul 07:00. Titik jemput: Hotel area Sanur. Jumlah tamu: 18 pax. Mobil: Toyota Innova Reborn. Terima kasih."} 

@@ -1,0 +1,2 @@
+#!/bin/bash
+exec "$(dirname "$0")/.php-portable/php" "$(dirname "$0")/.php-portable/composer.phar" "$@"

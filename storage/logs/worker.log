@@ -1,0 +1,29 @@
+  2026-10-02 14:29:24 App\Jobs\SendWhatsAppMessageJob ................ RUNNING
+  2026-10-02 14:29:24 App\Jobs\SendWhatsAppMessageJob ........... 76.71ms FAIL
+  2026-10-02 14:29:24 App\Jobs\SendWhatsAppMessageJob ................ RUNNING
+  2026-10-02 14:29:24 App\Jobs\SendWhatsAppMessageJob ........... 17.91ms FAIL
+  2026-10-02 14:29:55 App\Jobs\SendWhatsAppMessageJob ................ RUNNING
+  2026-10-02 14:29:55 App\Jobs\SendWhatsAppMessageJob ........... 24.91ms FAIL
+  2026-10-02 14:29:55 App\Jobs\SendWhatsAppMessageJob ................ RUNNING
+  2026-10-02 14:29:55 App\Jobs\SendWhatsAppMessageJob ........... 26.59ms FAIL
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[42S02]: Base table or view not found: 1146 Table 'mei_bali.cache' doesn't exist (Connection: mysql, Host: 127.0.0.1, Port: 17828, Database: mei_bali, SQL: select * from `cache` where `key` in (meibali_cache_illuminate:queue:restart))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:838
+    834▕             $exceptionType = $this->isUniqueConstraintError($e)
+    835▕                 ? UniqueConstraintViolationException::class
+    836▕                 : QueryException::class;
+    837▕ 
+  ➜ 838▕             throw new $exceptionType(
+    839▕                 $this->getNameWithReadWriteType(),
+    840▕                 $query,
+    841▕                 $this->prepareBindings($bindings),
+    842▕                 $e,
+
+      [2m+31 vendor frames [22m
+
+  32  artisan:13
+      Illuminate\Foundation\Application::handleCommand()
+
