@@ -41,7 +41,11 @@ Route::prefix('wa')->group(function () {
 });
 
 Route::prefix('export')->group(function () {
-	Route::get('/order/pdf', [ExportController::class, 'order_pdf'])->middleware('auth:sanctum');
+	Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
+	Route::get('/invoice/pdf', [ExportController::class, 'invoice_pdf']);
+	Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
+	Route::get('/{template}/pdf', [ExportController::class, 'template_pdf'])
+		->where('template', 'itinerary_tour|itinerary_service|itinerary_ticket|invoice|profit_loss|account_receivable|account_payable');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -51,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/me', [AuthController::class, 'updateProfile']);
     Route::patch('/me/password', [AuthController::class, 'updatePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+
 
     // Master data — every authenticated role may read; only Admin/Super Admin may write.
     Route::apiResource('clients', ClientController::class)->except(['store', 'update', 'destroy']);

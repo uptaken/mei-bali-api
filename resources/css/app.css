@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+@source "../views";
+
+@theme {
+	--font-sans: "Plus Jakarta Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+	--color-pdf-cream: #fce7d8;
+	--color-pdf-cacao: #773208;
+	--color-pdf-petal: #fb919a;
+	--color-pdf-coral: #ee727e;
+	--color-pdf-marigold: #f8a553;
+	--color-pdf-ink: #2b2622;
+	--color-pdf-muted: #8b8178;
+	--color-pdf-faint: #a79c92;
+	--color-pdf-line: #ececec;
+	--color-pdf-surface: #f8f7f6;
+	--color-pdf-cream-deep: #f7d9c4;
+}
+
+@page {
+	size: A4;
+	margin: 0;
+}
+
+@layer components {
+	body {
+		@apply m-0 bg-white font-sans text-pdf-ink text-[11px] leading-[1.5];
+	}
+
+	.pdf-body {
+		@apply m-0 bg-[#e9e6e2] font-sans text-pdf-ink text-[11px] leading-[1.5];
+	}
+
+	.page {
+		@apply relative mx-auto mb-[12mm] h-[297mm] w-[210mm] overflow-hidden bg-white px-[16mm] pt-[16mm] pb-[18mm] break-after-page;
+	}
+
+	.hd {
+		@apply flex items-start justify-between border-b-2 border-pdf-coral pb-[10px];
+	}
+
+	.logo {
+		@apply flex items-center gap-[8px];
+	}
+
+	.mark {
+		@apply grid size-[30px] place-items-center rounded-[8px] bg-linear-to-br from-pdf-petal to-pdf-coral;
+	}
+
+	.word {
+		@apply text-[16px] font-extrabold tracking-[-0.2px];
+	}
+
+	.word small {
+		@apply ml-1 text-[8px] font-bold tracking-[1.4px] text-pdf-muted uppercase;
+	}
+
+	.co {
+		@apply mt-[4px] text-[9px] leading-[1.4] text-pdf-muted;
+	}
+
+	.doc {
+		@apply text-right;
+	}
+
+	.doc .t {
+		@apply text-[9px] font-extrabold tracking-[1.6px] text-pdf-coral uppercase;
+	}
+
+	.doc .n {
+		@apply mt-[2px] text-[18px] font-extrabold;
+	}
+
+	.doc .s {
+		@apply text-[9.5px] text-pdf-muted;
+	}
+
+	.page h2 {
+		@apply mt-[16px] mb-[6px] text-[9px] font-extrabold tracking-[1.4px] text-pdf-cacao uppercase;
+	}
+
+	.grid {
+		@apply grid grid-cols-2 gap-x-[20px] gap-y-[8px];
+	}
+
+	.grid3 {
+		@apply grid-cols-3;
+	}
+
+	.f label {
+		@apply block text-[8.5px] font-bold tracking-[0.8px] text-pdf-faint uppercase;
+	}
+
+	.f div {
+		@apply font-semibold;
+	}
+
+	.box {
+		@apply rounded-[8px] border border-pdf-line bg-pdf-surface px-[11px] py-[9px];
+	}
+
+	.cream {
+		@apply border-pdf-cream-deep bg-pdf-cream text-pdf-cacao;
+	}
+
+	.page table {
+		@apply mt-[4px] w-full border-collapse;
+	}
+
+	.page th {
+		@apply border-t border-b border-pdf-line bg-pdf-surface px-[8px] py-[6px] text-left text-[8.5px] tracking-[0.8px] text-pdf-muted uppercase;
+	}
+
+	.page td {
+		@apply border-b border-pdf-line px-[8px] py-[6px] align-top;
+	}
+
+	.r {
+		@apply text-right whitespace-nowrap;
+	}
+
+	.mono {
+		@apply font-mono text-[10px];
+	}
+
+	.page tfoot td {
+		@apply border-t-2 border-pdf-ink border-b-0 font-extrabold;
+	}
+
+	.pill {
+		@apply inline-block rounded-full px-[7px] py-px text-[8.5px] font-bold;
+	}
+
+	.ok {
+		@apply bg-[#e4f4e8] text-[#1f7a3a];
+	}
+
+	.warn {
+		@apply bg-[#fff1da] text-[#a5600b];
+	}
+
+	.bad {
+		@apply bg-[#fde4e4] text-[#b42323];
+	}
+
+	.info {
+		@apply bg-pdf-cream text-pdf-cacao;
+	}
+
+	.kpis {
+		@apply mt-[6px] grid grid-cols-4 gap-[8px];
+	}
+
+	.kpi {
+		@apply rounded-[8px] border border-pdf-line px-[10px] py-[8px];
+	}
+
+	.kpi label {
+		@apply block text-[8px] font-bold tracking-[0.8px] text-pdf-faint uppercase;
+	}
+
+	.kpi b {
+		@apply text-[14px] font-extrabold;
+	}
+
+	.day {
+		@apply mt-[8px] overflow-hidden rounded-[8px] border border-pdf-line;
+	}
+
+	.day .dh {
+		@apply flex justify-between bg-linear-to-r from-pdf-cream to-white px-[10px] py-[6px] font-extrabold text-pdf-cacao;
+	}
+
+	.day .db {
+		@apply px-[10px] py-[8px];
+	}
+
+	.tl {
+		@apply mt-[4px] mx-0 mb-0 list-none p-0;
+	}
+
+	.tl li {
+		@apply relative py-[3px] pr-0 pl-[14px];
+	}
+
+	.tl li::before {
+		@apply absolute top-[9px] left-0 size-[6px] rounded-full bg-pdf-coral;
+		content: "";
+	}
+
+	.sign {
+		@apply mt-[26px] grid grid-cols-2 gap-[30px];
+	}
+
+	.sign div {
+		@apply border-t border-pdf-ink pt-[4px] text-center text-[9px] text-pdf-muted;
+	}
+
+	.ft {
+		@apply absolute right-[16mm] bottom-[9mm] left-[16mm] flex justify-between border-t border-pdf-line pt-[6px] text-[8.5px] text-pdf-faint;
+	}
+
+	.note {
+		@apply text-[9.5px] text-pdf-muted;
+	}
+
+	.tag {
+		@apply absolute top-[6mm] right-[8mm] text-[8px] tracking-[1px] text-pdf-faint uppercase;
+	}
+
+	.page:last-child {
+		@apply break-after-auto;
+	}
+}
+
+@media print {
+	.pdf-body {
+		@apply bg-white;
+	}
+
+	.page {
+		@apply m-0;
+	}
+}

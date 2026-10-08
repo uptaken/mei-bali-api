@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Enums\OrderSubType;
 use App\Enums\OrderType;
+use App\Enums\PayableStatus;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -139,6 +141,64 @@ class Order extends Model
 
         return max(1, $this->itineraryDays()->count() ?: ($this->durasi_hari ?? 1));
     }
+
+		public function getCombinedBayarStatusAttribute(): PayableStatus
+		{
+				$addonStatuses = $this->addOns->pluck('bayar_status');
+				$assignmentStatuses = $this->assignments->pluck('bayar_status');
+				$ticketRowStatuses = $this->ticketRows->pluck('bayar_status');
+				$itineraryDaysStatuses = $this->itineraryDays
+					->flatMap(fn ($day) => $day->itineraryActivity)
+					->pluck('bayar_status');
+				$allStatuses = $addonStatuses->merge($assignmentStatuses)->merge($ticketRowStatuses)->merge($itineraryDaysStatuses);
+
+				if ($allStatuses->contains(PayableStatus::BelumBayar)) {
+						return PayableStatus::BelumBayar;
+				}
+
+				// if ($allStatuses->isNotEmpty() && $allStatuses->every(fn ($status) => $status === 'paid')) {
+				// 		return 'paid';
+				// }
+
+				return PayableStatus::Bayar;
+		}
+
+		public function getCombinedSupplierAttribute()
+		{
+				$addonSupplier = $this->addOns->pluck('supplier_nama');
+				$assignmentSupplier = $this->assignments->flatMap(fn ($day) => $day->supplier)->pluck('nama');
+				$ticketRowSupplier = $this->ticketRows->pluck('supplier_nama');
+				$itineraryDaysSupplier = $this->itineraryDays
+					->flatMap(fn ($day) => $day->itineraryActivity)
+					->pluck('supplier_tur');
+				$allSupplier = $addonSupplier->merge($assignmentSupplier)->merge($ticketRowSupplier)->merge($itineraryDaysSupplier);
+
+
+				$arrTemp = [];
+				foreach($allSupplier as $supplier){
+					$index = -1;
+					foreach($arrTemp as $key => $temp){
+						if($key == $supplier){
+							$index = $key;
+							break;
+						}
+					}
+
+					if($index >= 0)
+						$arrTemp[$index]++;
+					else
+						$arrTemp[$supplier] = 1;
+				}
+
+				// if ($allSupplier->isNotEmpty() && $allSupplier->every(fn ($status) => $status === 'paid')) {
+				// 		return 'paid';
+				// }
+
+				return [
+					'arrSupplier' => $arrTemp,
+					'total' => count($arrTemp),
+				];
+		}
 
     /**
      * Mirrors legModal() from src/lib/orderDraft.ts: Tour = itinerary Biaya, Layanan = the order's

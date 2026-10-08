@@ -59,6 +59,16 @@ cp .env.example .env
 ./php artisan key:generate
 ```
 
+Untuk membuat CSS Tailwind v4 yang dipakai PDF itinerary, pasang dependensi Node lalu build stylesheet:
+
+```bash
+npm install
+npm run build:css
+```
+
+Build ini menghasilkan `public/css/app.css`, yang disertakan inline saat PDF dibuat. Contoh template
+PDF terpisah tersedia sebagai Blade view di `resources/views/exports/` dan mewarisi `exports.base`.
+
 **Opsi tercepat untuk langsung coba tanpa MySQL** — pakai SQLite (sudah terbukti jalan di §"Update" atas):
 
 ```bash
@@ -176,6 +186,9 @@ Yang butuh role Admin/Super Admin ditandai 🔒.
 | POST/PATCH/DELETE ke path di atas | 🔒 | Kelola master data |
 | GET | `/api/orders` | List order (filter: `tipe`, `status`, `supplier_id`, `date_from`, `date_to`, `q`) |
 | GET | `/api/orders/{id}` | Detail order + itinerary/assignment/invoice |
+| GET | `/api/export/order/pdf?id={id}` | Download order PDF; Tour orders use the `itinerary_tour` layout |
+| GET | `/api/export/itinerary_tour/pdf?id={id}` | Download a Tour itinerary PDF for the specified order |
+| GET | `/api/export/templates/{template}/pdf` | Download sample PDF template (`itinerary_service`, `itinerary_ticket`, `invoice`, `profit_loss`, `account_receivable`, `account_payable`) |
 | POST | `/api/orders` | 🔒 Buat order baru (satu payload untuk Tour/Layanan/Ticket sekaligus, langsung bikin Invoice) |
 | PATCH | `/api/orders/{id}` | 🔒 Ubah field dasar order |
 | PATCH | `/api/orders/{id}/operational` | 🔒 Operational & Reservasi — assignment (bisa lebih dari satu mobil/hari), add-ons, harga itinerary |
@@ -191,6 +204,8 @@ Yang butuh role Admin/Super Admin ditandai 🔒.
 | POST | `/api/payables/{id}/mark-paid` | Tandai satu Tagihan lunas |
 | POST | `/api/payables/mark-paid-bulk` | Tandai banyak Tagihan lunas sekaligus |
 | POST | `/api/whatsapp/send` | Kirim WA bebas (tanpa terkait Order) |
+
+Template sample PDF selain itinerary Tour memakai data contoh yang tertanam di masing-masing Blade view.
 
 ## 6. Test
 

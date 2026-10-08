@@ -1,27 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id" class="bg-white text-[13px]">
 <head>
 	<meta charset="utf-8">
-	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-	<style>
-	html{
-		font-size: 13px;
-		background-color: white;
-	}
-	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<?php echo $__env->yieldContent('style'); ?>
 	<?php echo $__env->yieldContent('top_script'); ?>
 </head>
 
-<body>
-
-
-	<div class="">
+<body class="<?php echo $__env->yieldContent('body_class', 'm-0 bg-white text-[#242424] [font-family:Arial,Helvetica,sans-serif] text-[12px] leading-[1.45]'); ?>">
 	<?php echo $__env->yieldContent('content'); ?>
-	</div>
-
-	<script src="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.js"></script>
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.0/moment.min.js"></script>
 
 	<?php echo $__env->yieldContent('script'); ?>
 </body>
