@@ -54,6 +54,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
         Route::get('/account-receivable/pdf', [ExportController::class, 'account_receivable_pdf']);
         Route::get('/profit-loss/pdf', [ExportController::class, 'profit_loss_pdf']);
+
+
+				Route::get('/account-payable/excel', [ExportController::class, 'account_payable_excel']);
+				Route::get('/account-receivable/excel', [ExportController::class, 'account_receivable_excel']);
+				Route::get('/profit-loss/excel', [ExportController::class, 'profit_loss_excel']);
+				Route::get('/invoice/excel', [ExportController::class, 'invoice_excel']);
+				Route::get('/order/excel', [ExportController::class, 'order_excel']);
     });
 
 

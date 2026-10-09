@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
     {
         $users = collect([
 					['nama' => 'QuantumTri', 'email' => 'quantumtri.test@gmail.com', 'role' => UserRole::SuperAdmin, 'password' => '12345',],
+					['nama' => 'Admin', 'email' => 'admin@admin.com', 'role' => UserRole::SuperAdmin, 'password' => '12345',],
             ['nama' => 'Made Wirawan', 'email' => 'made.wirawan@meibali.com', 'role' => UserRole::Operator, 'password' => '12345',],
             ['nama' => 'Ayu Kartika', 'email' => 'ayu.kartika@meibali.com', 'role' => UserRole::SuperAdmin, 'password' => '12345',],
             ['nama' => 'Sinta Wulandari', 'email' => 'sinta.wulandari@meibali.com', 'role' => UserRole::Admin, 'password' => '12345',],

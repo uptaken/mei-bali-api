@@ -14,7 +14,6 @@
 <?php $__env->startSection('content'); ?>
 	<main class="page">
 		<?php echo $__env->make('exports.partials.header', [
-			'tag' => 'Template 1 · Itinerary (Tour) · tanpa Modal/Biaya',
 			'brand' => 'Tours',
 			'eyebrow' => 'Itinerary Perjalanan',
 			'title' => $order->kode,

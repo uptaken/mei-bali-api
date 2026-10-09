@@ -1,4 +1,3 @@
-<div class="tag"><?php echo e($tag); ?></div>
 <header class="hd">
 	<div>
 		<div class="logo">
@@ -11,8 +10,9 @@
 		</div>
 		<div class="co">
 			<?php if(($brand ?? 'Ops') === 'Tours'): ?>
-				PT Mei Bali Wisata · Jl. Contoh No. 1, Denpasar, Bali<br>
-				info@meibali.com · +62 361 000 000
+				<?php echo e(implode(' · ', array_filter([config('company.name'), config('company.address')]))); ?><br>
+				<?php echo e(implode(' · ', array_filter([config('company.email'), config('company.phone')]))); ?>
+
 			<?php else: ?>
 				Laporan Keuangan Internal
 			<?php endif; ?>

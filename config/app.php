@@ -26,5 +26,6 @@ return [
 			'Curl' => Ixudra\Curl\Facades\Curl::class,
 			'Auth' => Illuminate\Support\Facades\Auth::class,
 			'NEWPDF1' => Spatie\LaravelPdf\Facades\Pdf::class,
+			'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 		],
 ];
