@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
             'dewasa' => 18,
             'anak' => 0,
             'catatan' => 'Grup korporat 18 pax. Rooming list & manifest fast boat dikirim H-3.',
-            'guests' => [
+            'tamu' => [
                 ['nama' => 'Budi Santoso', 'kategori' => 'Dewasa'],
                 ['nama' => 'Siti Aminah', 'kategori' => 'Dewasa'],
             ],
@@ -130,7 +130,7 @@ class DatabaseSeeder extends Seeder
             'dewasa' => 2,
             'anak' => 0,
             'catatan' => 'Jemput kedatangan internasional, antar ke hotel Seminyak.',
-            'guests' => [
+            'tamu' => [
                 ['nama' => 'James Whitfield', 'kategori' => 'Dewasa'],
                 ['nama' => 'Olivia Whitfield', 'kategori' => 'Dewasa'],
             ],

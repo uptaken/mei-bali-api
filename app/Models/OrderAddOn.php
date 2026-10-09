@@ -6,6 +6,10 @@ use App\Enums\PayableStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Produk tambahan pada order (mis. makan, tiket) beserta modal dan supplier-nya. Status bayar ke supplier
+ * (`bayar_status`, `tanggal_bayar`) dimiliki endpoint Payables, bukan form order.
+ */
 class OrderAddOn extends Model
 {
     protected $table = 'order_add_ons';
@@ -29,7 +33,7 @@ class OrderAddOn extends Model
             'modal' => 'integer',
             'skip_biaya' => 'boolean',
             'bayar_status' => PayableStatus::class,
-            'tanggal_bayar' => 'date',
+            'tanggal_bayar' => 'date:Y-m-d',
         ];
     }
 

@@ -13,7 +13,7 @@ class RegistrationNotification extends Mailable
 {
 		use Queueable, SerializesModels;
 
-		public function __construct(public User $user, public string $password)
+		public function __construct(public User $user, public string $setPasswordUrl, public int $expiresInMinutes)
 		{
 		}
 
@@ -26,6 +26,6 @@ class RegistrationNotification extends Mailable
 
 		public function content(): Content
 		{
-				return new Content(view: 'emails.register');
+				return new Content(view: 'emails.register', with: ['loginUrl' => config('app.frontend_url').'/login']);
 		}
 }

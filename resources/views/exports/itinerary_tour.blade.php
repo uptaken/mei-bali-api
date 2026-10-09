@@ -16,7 +16,6 @@
 @section('content')
 	<main class="page">
 		@include('exports.partials.header', [
-			'tag' => 'Template 1 · Itinerary (Tour) · tanpa Modal/Biaya',
 			'brand' => 'Tours',
 			'eyebrow' => 'Itinerary Perjalanan',
 			'title' => $order->kode,

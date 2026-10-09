@@ -6,6 +6,9 @@ use App\Enums\PayableStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Satu baris tiket pada order Ticket: nama tiket, qty, modal satuan, dan supplier.
+ */
 class OrderTicketRow extends Model
 {
     protected $fillable = [
@@ -27,7 +30,7 @@ class OrderTicketRow extends Model
             'modal_satuan' => 'integer',
             'harga_jual_ref' => 'integer',
             'bayar_status' => PayableStatus::class,
-            'tanggal_bayar' => 'date',
+            'tanggal_bayar' => 'date:Y-m-d',
         ];
     }
 

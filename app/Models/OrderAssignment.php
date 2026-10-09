@@ -28,7 +28,7 @@ class OrderAssignment extends Model
             'hari' => 'integer',
             'biaya_transport_modal' => 'integer',
             'bayar_status' => PayableStatus::class,
-            'tanggal_bayar' => 'date',
+            'tanggal_bayar' => 'date:Y-m-d',
         ];
     }
 

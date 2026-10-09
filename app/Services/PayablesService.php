@@ -265,6 +265,23 @@ class PayablesService
         }
     }
 
+    /** Headline figures for a set of Tagihan — cancelled Orders stay in the list but are never counted. */
+    public function summary(Collection $groups): array
+    {
+        $live = $groups->reject(fn ($g) => $g['cancelled']);
+        $belum = $live->where('status', PayableStatus::BelumBayar->value);
+        $sudah = $live->where('status', PayableStatus::Bayar->value);
+
+        return [
+            'perluDibayar' => $belum->sum('modal'),
+            'perluCount' => $belum->count(),
+            'sudahDibayar' => $sudah->sum('modal'),
+            'sudahCount' => $sudah->count(),
+            'supplierCount' => $live->map(fn ($g) => $g['tipeTagihan'].':'.($g['supplierId'] ?? mb_strtolower($g['supplierNama'])))->unique()->count(),
+            'overdueCount' => $belum->filter(fn ($g) => $this->daysOutstanding($g) > 7)->count(),
+        ];
+    }
+
     /** Days an unpaid Tagihan has been outstanding, measured against the real clock. */
     public function daysOutstanding(array $group): int
     {

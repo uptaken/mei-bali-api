@@ -6,6 +6,10 @@ use App\Enums\PayableStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Satu aktivitas dalam hari itinerary tur, dengan biaya (modal) dan supplier tur. `skip_biaya` berarti tidak ada tagihan
+ * (mis. gratis atau sudah termasuk paket).
+ */
 class OrderItineraryActivity extends Model
 {
     protected $fillable = [
@@ -14,6 +18,7 @@ class OrderItineraryActivity extends Model
         'biaya',
         'skip_biaya',
         'supplier_tur',
+        'urutan',
         'bayar_status',
         'tanggal_bayar',
     ];
@@ -24,7 +29,7 @@ class OrderItineraryActivity extends Model
             'biaya' => 'integer',
             'skip_biaya' => 'boolean',
             'bayar_status' => PayableStatus::class,
-            'tanggal_bayar' => 'date',
+            'tanggal_bayar' => 'date:Y-m-d',
         ];
     }
 

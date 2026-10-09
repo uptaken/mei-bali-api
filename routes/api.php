@@ -25,32 +25,40 @@ use App\Http\Controllers\Api\WhatsAppTemplateController;
 
 use App\Http\Controllers\ExportController;
 
+// Rute publik: hanya login dan lupa/reset password (yang terakhir dibatasi 5 permintaan per menit).
+// Semua rute lain di bawah wajib token Sanctum (header Authorization: Bearer ...).
 Route::post('/login', [AuthController::class, 'login']);
-
-Route::prefix('wa')->group(function () {
-
-	Route::get('/start', [WAController::class, 'start_session']);
-	Route::get('/restart', [WAController::class, 'restart_session']);
-	Route::get('/status', [WAController::class, 'status_session']);
-	Route::get('/terminate', [WAController::class, 'terminate_session']);
-	Route::get('/qr', [WAController::class, 'qr_session']);
-	Route::get('/qr/image', [WAController::class, 'qr_image_session']);
-	Route::get('/state', [WAController::class, 'get_state']);
-	Route::get('/number/search', [WAController::class, 'get_number_search']);
-
-});
-
-Route::prefix('export')->group(function () {
-	Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
-	Route::get('/invoice/pdf', [ExportController::class, 'invoice_pdf']);
-	Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
-	Route::get('/{template}/pdf', [ExportController::class, 'template_pdf'])
-		->where('template', 'itinerary_tour|itinerary_service|itinerary_ticket|invoice|profit_loss|account_receivable|account_payable');
-});
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
 Route::middleware('auth:sanctum')->group(function () {
+    // WhatsApp session control and PDF export — authenticated like everything else (the frontend sends its token).
+    // Kontrol sesi WhatsApp (QR, status, restart) — dipakai halaman Template WhatsApp.
+    Route::prefix('wa')->group(function () {
+
+        Route::get('/start', [WAController::class, 'start_session']);
+        Route::get('/restart', [WAController::class, 'restart_session']);
+        Route::get('/status', [WAController::class, 'status_session']);
+        Route::get('/terminate', [WAController::class, 'terminate_session']);
+        Route::get('/qr', [WAController::class, 'qr_session']);
+        Route::get('/qr/image', [WAController::class, 'qr_image_session']);
+        Route::get('/state', [WAController::class, 'get_state']);
+        Route::get('/number/search', [WAController::class, 'get_number_search']);
+
+    });
+
+    // PDF (itinerary, invoice, laporan) dibuat server-side lewat Browsershot; frontend membukanya dengan token.
+    Route::prefix('export')->group(function () {
+        Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
+        Route::get('/invoice/pdf', [ExportController::class, 'invoice_pdf']);
+        Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
+        Route::get('/account-receivable/pdf', [ExportController::class, 'account_receivable_pdf']);
+        Route::get('/profit-loss/pdf', [ExportController::class, 'profit_loss_pdf']);
+    });
 
 
+
+    // Akun yang sedang login: lihat, ubah profil, ganti password, keluar.
     Route::get('/me', [AuthController::class, 'me']);
     Route::patch('/me', [AuthController::class, 'updateProfile']);
     Route::patch('/me/password', [AuthController::class, 'updatePassword']);
@@ -104,14 +112,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/orders/{order}/operational', [OrderOperationalController::class, 'update']);
         Route::post('/orders/{order}/selesai', [OrderController::class, 'markSelesai']);
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+        Route::post('/orders/{order}/reject-cancellation', [OrderController::class, 'rejectCancellation']);
     });
 
-    // Invoices
+    // Invoices — Harga Jual diisi manual, lalu ditandai Sudah Ditagihkan; pembayaran client dicatat di /payments.
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
     Route::patch('/invoices/{invoice}/lines', [InvoiceController::class, 'updateLines']);
     Route::post('/invoices/{invoice}/mark-billed', [InvoiceController::class, 'markBilled']);
     Route::post('/invoices/{invoice}/unmark-billed', [InvoiceController::class, 'unmarkBilled']);
+    Route::post('/invoices/{invoice}/excel-downloaded', [InvoiceController::class, 'excelDownloaded']);
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment']);
 
     // Tagihan yang Perlu Dibayarkan (Payables) — always derived, never authored.
@@ -120,6 +130,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payables/{id}/mark-paid', [PayableController::class, 'markPaid'])->where('id', '.*');
     Route::post('/payables/mark-paid-bulk', [PayableController::class, 'markPaidBulk']);
 
-    // WhatsApp
+    // Kirim pesan WhatsApp lewat antrean (SendWhatsAppMessageJob) dan catat di tabel whatsapp_messages.
     Route::post('/whatsapp/send', [WhatsAppController::class, 'send']);
 });

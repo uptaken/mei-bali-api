@@ -68,7 +68,7 @@ class WhatsAppController extends BaseController
         return response()->json([
             'message' => 'Pesan WhatsApp sedang dikirim.',
             'preview' => $message,
-            'order' => $order->fresh(),
+            'order' => $order->fresh(OrderController::WITH),
         ]);
     }
 

@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Tagihan ke client untuk satu order. Baris (`lines`) menyimpan modal dan Harga Jual; `total` dan `sisa` dihitung
+ * dari Harga Jual dikurangi pembayaran yang sudah masuk.
+ */
 class Invoice extends Model
 {
     protected $fillable = [
@@ -27,9 +31,9 @@ class Invoice extends Model
             'total' => 'integer',
             'sisa' => 'integer',
 						'modal' => 'integer',
-            'tanggal_dibuat' => 'date',
+            'tanggal_dibuat' => 'date:Y-m-d',
             'status' => InvoiceStatus::class,
-            'tanggal_ditagihkan' => 'date',
+            'tanggal_ditagihkan' => 'date:Y-m-d',
         ];
     }
 

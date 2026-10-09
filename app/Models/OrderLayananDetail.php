@@ -6,6 +6,9 @@ use App\Enums\PayableStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Detail khusus order Layanan (transfer, check-in/out): tamu, titik jemput/antar, info flight, jumlah pax, dan modal.
+ */
 class OrderLayananDetail extends Model
 {
     protected $fillable = [
@@ -29,7 +32,7 @@ class OrderLayananDetail extends Model
             'jumlah_pax' => 'integer',
             'biaya_modal' => 'integer',
             'bayar_status' => PayableStatus::class,
-            'tanggal_bayar' => 'date',
+            'tanggal_bayar' => 'date:Y-m-d',
         ];
     }
 

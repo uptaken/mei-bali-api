@@ -29,20 +29,9 @@ class PayableController extends Controller
             ->when($q !== '', fn ($c) => $c->filter(fn ($g) => str_contains(mb_strtolower($g['kode'].' '.$g['namaOrder'].' '.$g['namaTamu'].' '.$g['supplierNama']), mb_strtolower($q))))
             ->values();
 
-        $live = $filtered->reject(fn ($g) => $g['cancelled']);
-        $belum = $live->where('status', 'Belum Bayar');
-        $sudah = $live->where('status', 'Bayar');
-
         return response()->json([
             'data' => $filtered,
-            'summary' => [
-                'perluDibayar' => $belum->sum('modal'),
-                'perluCount' => $belum->count(),
-                'sudahDibayar' => $sudah->sum('modal'),
-                'sudahCount' => $sudah->count(),
-                'supplierCount' => $live->map(fn ($g) => $g['tipeTagihan'].':'.($g['supplierId'] ?? mb_strtolower($g['supplierNama'])))->unique()->count(),
-                'overdueCount' => $belum->filter(fn ($g) => $this->payables->daysOutstanding($g) > 7)->count(),
-            ],
+            'summary' => $this->payables->summary($filtered),
         ]);
     }
 

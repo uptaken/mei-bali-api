@@ -5,6 +5,10 @@ return [
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost'),
+
+    /** First origin of FRONTEND_URL (it may be a comma-separated CORS list): where links in emails point. */
+    // Alamat frontend (bukan API) untuk tautan di email, mis. /login dan /reset-password. Ambil entri pertama FRONTEND_URL.
+    'frontend_url' => trim(explode(',', env('FRONTEND_URL', 'http://localhost:5173'))[0]),
     'timezone' => env('APP_TIMEZONE', 'UTC'),
     'locale' => env('APP_LOCALE', 'en'),
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),

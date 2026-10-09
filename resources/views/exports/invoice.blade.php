@@ -9,7 +9,6 @@
 @section('content')
 <main class="page">
 	@include('exports.partials.header', [
-		'tag' => 'Template 4 · Invoice (Excel di aplikasi — versi PDF)',
 		'brand' => 'Tours',
 		'eyebrow' => 'Invoice',
 		'title' => $invoice->nomor,
@@ -72,8 +71,10 @@
 		</table>
 	</div>
 
-	<h2>Pembayaran</h2>
-	<div class="box">Transfer ke <strong>Bank BCA 000-000-0000</strong> a.n. PT Mei Bali Wisata. Cantumkan nomor invoice pada berita transfer.</div>
+	@if (config('company.bank_account'))
+		<h2>Pembayaran</h2>
+		<div class="box">Transfer ke <strong>{{ config('company.bank_account') }}</strong>. Cantumkan nomor invoice pada berita transfer.</div>
+	@endif
 	<div class="sign">
 		<div>Hormat kami,<br><br><br>{{ $invoice->order->createdBy->nama }}</div>
 		<div>Diterima oleh,<br><br><br>(__________________)</div>

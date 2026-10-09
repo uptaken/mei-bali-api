@@ -9,18 +9,17 @@
 @section('content')
 <main class="page">
 	@include('exports.partials.header', [
-		'tag' => 'Template 3 · Itinerary (Ticket)',
 		'brand' => 'Tours',
 		'eyebrow' => 'Ringkasan Tiket',
 		'title' => $order->kode,
-		'dateLine' => 'Diterbitkan '.$order->created_at->isoFormat('DD MMMM YYYY'),
+		'dateLine' => 'Diterbitkan '.now()->locale('id')->translatedFormat('d F Y'),
 	])
 
 	<h2>Informasi Umum</h2>
 	<div class="grid grid3">
-		<div class="f"><label>Client</label><div>{{ $order->client->nama }}</div></div>
+		<div class="f"><label>Client</label><div>{{ $order->client?->nama ?? '-' }}</div></div>
 		<div class="f"><label>Nama Order</label><div>{{ $order->nama_order }}</div></div>
-		<div class="f"><label>Tanggal Pemakaian</label><div>{{ \Carbon\Carbon::parse($order->tanggal_mulai)->isoFormat('DD MMMM YYYY') }}</div></div>
+		<div class="f"><label>Tanggal Pemakaian</label><div>{{ ($order->tanggal_pemakaian ?? $order->tanggal_mulai) ? \Carbon\Carbon::parse($order->tanggal_pemakaian ?? $order->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '-' }}</div></div>
 	</div>
 
 	<h2>Rincian Tiket</h2>

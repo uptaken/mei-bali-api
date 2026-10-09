@@ -1,4 +1,3 @@
-<div class="tag">{{ $tag }}</div>
 <header class="hd">
 	<div>
 		<div class="logo">
@@ -11,8 +10,8 @@
 		</div>
 		<div class="co">
 			@if (($brand ?? 'Ops') === 'Tours')
-				PT Mei Bali Wisata · Jl. Contoh No. 1, Denpasar, Bali<br>
-				info@meibali.com · +62 361 000 000
+				{{ implode(' · ', array_filter([config('company.name'), config('company.address')])) }}<br>
+				{{ implode(' · ', array_filter([config('company.email'), config('company.phone')])) }}
 			@else
 				Laporan Keuangan Internal
 			@endif

@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Satu hari dalam itinerary tur: titik jemput/antar dan daftar aktivitasnya.
+ */
 class OrderItineraryDay extends Model
 {
     protected $fillable = [
@@ -33,6 +36,6 @@ class OrderItineraryDay extends Model
 
     public function activities(): HasMany
     {
-        return $this->hasMany(OrderItineraryActivity::class, 'order_itinerary_day_id');
+        return $this->hasMany(OrderItineraryActivity::class, 'order_itinerary_day_id')->orderBy('urutan')->orderBy('id');
     }
 }

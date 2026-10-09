@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * Satu order (Tour, Layanan, atau Ticket) beserta modal, status, dan penugasannya. Total = modal (bukan harga jual);
+ * harga jual ada di baris Invoice. Kolom tanggal memakai cast `date:Y-m-d` agar tidak bergeser sehari oleh zona waktu aplikasi.
+ */
 class Order extends Model
 {
     use HasFactory;
@@ -61,8 +65,8 @@ class Order extends Model
             'anak' => 'integer',
             'biaya_transport_modal' => 'integer',
             'wa_sent_at' => 'datetime',
-            // 'tanggal_mulai' => 'date',
-            'tanggal_pemakaian' => 'date',
+            'tanggal_mulai' => 'date:Y-m-d',
+            'tanggal_pemakaian' => 'date:Y-m-d',
             'pending_cancellation' => 'boolean',
         ];
     }

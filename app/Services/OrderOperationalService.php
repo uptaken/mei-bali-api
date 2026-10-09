@@ -20,10 +20,15 @@ class OrderOperationalService
 {
     public function __construct(private readonly OrderService $orderService) {}
 
+    /**
+     * Simpan layar Operasional: penugasan kendaraan/supplier, modal add-on, dan biaya aktivitas tur.
+     * Lalu hitung ulang total modal, majukan status ke "Siap Kirim WA" bila semua penugasan lengkap,
+     * catat riwayat 'assigned', dan sinkronkan baris invoice. Semua dalam satu transaksi.
+     */
     public function update(Order $order, array $data, User $actor): Order
     {
         return DB::transaction(function () use ($order, $data, $actor) {
-            // Replace the whole assignment set — the screen owns it entirely once opened.
+            // Penugasan diganti seluruhnya: layar ini pemegang tunggal datanya setelah dibuka.
             if (array_key_exists('assignments', $data)) {
                 $order->assignments()->delete();
                 foreach ($data['assignments'] as $a) {
@@ -79,10 +84,10 @@ class OrderOperationalService
 
             $order->load(['assignments.vehicle', 'assignments.supplier', 'itineraryDays.activities', 'addOns.product', 'layananDetail']);
 
+            // Lengkap = ada penugasan dan setiap penugasan sudah punya kendaraan + supplier.
             $isComplete = $order->assignments->isNotEmpty()
                 && $order->assignments->every(fn ($a) => $a->vehicle_id && $a->supplier_id);
 
-            $totalModalTur = $order->itineraryDays->flatMap->activities->sum('biaya');
             $totalModalAddOns = $order->addOns->sum(fn ($a) => $a->qty * $a->modal);
             $totalBiayaTransport = $order->assignments->sum('biaya_transport_modal');
 
@@ -93,9 +98,8 @@ class OrderOperationalService
                 'updated_by' => $actor->id,
             ];
 
-            $patch['total'] = $order->tipe === OrderType::Tour
-                ? $totalModalTur + $totalModalAddOns
-                : ($order->legModalValue() + $totalModalAddOns);
+            // Angka yang sama dengan OrderService saat create/edit: modal inti + add-on + transport.
+            $patch['total'] = $order->legModalValue() + $totalModalAddOns + $totalBiayaTransport;
 
             $canAdvance = in_array($order->tipe, [OrderType::Tour, OrderType::Layanan], true);
             if ($canAdvance && $order->status === OrderStatus::MenungguSupplierDriver && $isComplete) {
@@ -104,6 +108,7 @@ class OrderOperationalService
 
             $order->update($patch);
 
+            // Nama supplier pertama dipakai sebagai keterangan di riwayat order dan invoice.
             $supplierName = $order->assignments->first()?->supplier?->nama
                 ?? Supplier::find($order->assignments->first()?->supplier_id)?->nama;
 
