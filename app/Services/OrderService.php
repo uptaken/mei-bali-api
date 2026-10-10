@@ -78,6 +78,7 @@ class OrderService
                 'updated_by' => $creator->id,
             ]);
 
+            $this->clearLeftovers($order);
             $this->saveChildren($order, $data);
             $this->refreshDerivedFields($order);
 
@@ -92,6 +93,24 @@ class OrderService
 
             return $order;
         });
+    }
+
+    /**
+     * A brand-new Order cannot have children yet. Rows can still exist for its id when an earlier Order
+     * was removed straight from the database without its children (foreign keys off, or a truncate) and
+     * the id was handed out again — they would show up as another Order's Riwayat, tamu or invoice.
+     */
+    private function clearLeftovers(Order $order): void
+    {
+        $order->itineraryDays->each(fn ($day) => $day->activities()->delete());
+        $order->invoices->each(function ($invoice) {
+            $invoice->lines()->delete();
+            $invoice->events()->delete();
+        });
+
+        foreach (['events', 'assignments', 'guests', 'itineraryDays', 'addOns', 'ticketRows', 'layananDetail', 'invoices'] as $relation) {
+            $order->{$relation}()->delete();
+        }
     }
 
     public function update(Order $order, array $data, User $actor): Order
