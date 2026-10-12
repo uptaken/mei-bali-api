@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RefusesDeleteWhenUsed;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Package;
 use Illuminate\Http\Request;
 
 class PackageController extends Controller
 {
+    use RefusesDeleteWhenUsed;
+
     public function index(Request $request)
     {
 			$arr = Package::query()->orderBy('nama')->get();
@@ -63,6 +67,7 @@ class PackageController extends Controller
 
     public function destroy(Package $package)
     {
+        $this->refuseIfUsed('Package', $package->nama, ['order' => Order::where('paket_id', (string) $package->id)->count()]);
         $package->delete();
 
         return response()->json(status: 204);

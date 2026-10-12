@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RefusesDeleteWhenUsed;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
+    use RefusesDeleteWhenUsed;
+
     public function index(Request $request)
     {
         return Supplier::query()->orderBy('nama')->get();
@@ -48,6 +52,7 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
+        $this->refuseIfUsed('Supplier', $supplier->nama, ['order' => Order::where('supplier_id', $supplier->id)->orWhereHas('assignments', fn ($q) => $q->where('supplier_id', $supplier->id))->count()]);
         $supplier->delete();
 
         return response()->json(status: 204);

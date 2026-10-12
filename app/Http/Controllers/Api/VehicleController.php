@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RefusesDeleteWhenUsed;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
+    use RefusesDeleteWhenUsed;
+
     public function index()
     {
         return Vehicle::orderBy('nama')->get();
@@ -41,6 +45,7 @@ class VehicleController extends Controller
 
     public function destroy(Vehicle $vehicle)
     {
+        $this->refuseIfUsed('Mobil', $vehicle->nama, ['order' => Order::where('vehicle_id', $vehicle->id)->orWhereHas('assignments', fn ($q) => $q->where('vehicle_id', $vehicle->id))->count()]);
         $vehicle->delete();
 
         return response()->json(status: 204);

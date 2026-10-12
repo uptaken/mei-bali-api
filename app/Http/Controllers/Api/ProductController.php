@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RefusesDeleteWhenUsed;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    use RefusesDeleteWhenUsed;
+
     public function index()
     {
         return Product::with('category')->orderBy('nama')->get();
@@ -48,6 +52,7 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        $this->refuseIfUsed('Produk', $product->nama, ['order' => Order::whereHas('addOns', fn ($q) => $q->where('product_id', $product->id))->count()]);
         $product->delete();
 
         return response()->json(status: 204);

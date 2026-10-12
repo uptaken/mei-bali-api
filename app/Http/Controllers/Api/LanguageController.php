@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RefusesDeleteWhenUsed;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Language;
 use Illuminate\Http\Request;
 
 class LanguageController extends Controller
 {
+    use RefusesDeleteWhenUsed;
+
     public function index(Request $request)
     {
 			$arr = Language::query()->orderBy('nama')->get();
@@ -50,6 +54,7 @@ class LanguageController extends Controller
 
     public function destroy(Language $language)
     {
+        $this->refuseIfUsed('Bahasa', $language->nama, ['order' => Order::where('bahasa_id', (string) $language->id)->count()]);
         $language->delete();
 
         return response()->json(status: 204);

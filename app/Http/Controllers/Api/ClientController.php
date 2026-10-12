@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RefusesDeleteWhenUsed;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\Invoice;
 use App\Models\Client;
 use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
+    use RefusesDeleteWhenUsed;
+
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
@@ -63,6 +68,7 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
+        $this->refuseIfUsed('Client', $client->nama, ['order' => Order::where('client_id', $client->id)->count(), 'invoice' => Invoice::where('client_id', $client->id)->count()]);
         $client->delete();
 
         return response()->json(status: 204);
