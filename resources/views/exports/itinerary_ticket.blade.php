@@ -22,6 +22,12 @@
 		<div class="f"><label>Tanggal Pemakaian</label><div>{{ ($order->tanggal_pemakaian ?? $order->tanggal_mulai) ? \Carbon\Carbon::parse($order->tanggal_pemakaian ?? $order->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '-' }}</div></div>
 	</div>
 
+	@if ($order->catatan)
+		<div class="box cream mt-3">
+			<strong>Catatan:</strong> {{ $order->catatan }}
+		</div>
+	@endif
+
 	<h2>Rincian Tiket</h2>
 	<table>
 		<thead><tr><th>Nama Tiket</th><th class="r">Jumlah</th></tr></thead>

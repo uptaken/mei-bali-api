@@ -338,7 +338,7 @@ class OrderAndPayablesTest extends TestCase
             'assignments' => [['hari' => 1, 'vehicleId' => $vehicle->id, 'supplierId' => $supplier->id, 'biayaTransportModal' => 300000]]]);
         $layanan = $create(['tipe' => 'layanan', 'subTipe' => 'transfer', 'namaOrder' => 'Transfer PDF',
             'layananDetail' => ['namaTamu' => 'Tamu PDF', 'pickUpPoint' => 'Bandara PDF', 'dropOffPoint' => 'Hotel PDF', 'jumlahPax' => 2, 'biayaModal' => 0]]);
-        $ticket = $create(['tipe' => 'ticket', 'namaOrder' => 'Tiket PDF', 'tanggalPemakaian' => $today,
+        $ticket = $create(['tipe' => 'ticket', 'namaOrder' => 'Tiket PDF', 'tanggalPemakaian' => $today, 'catatan' => 'Bawa KTP asli',
             'ticketRows' => [['namaTiket' => 'Bali Zoo PDF', 'qty' => 2, 'modalSatuan' => 100000]]]);
 
         // Calls the controller directly: the fake PDF builder records the rendered HTML only when asked for the PDF content.
@@ -357,7 +357,7 @@ class OrderAndPayablesTest extends TestCase
         $export('order_pdf', ['id' => $layanan->json('id')], 'exports.itinerary_service');
         \Spatie\LaravelPdf\Facades\Pdf::assertSee(['Konfirmasi Layanan · Transfer', 'Tamu PDF', 'Bandara PDF', 'Hotel PDF']);
         $export('order_pdf', ['id' => $ticket->json('id')], 'exports.itinerary_ticket');
-        \Spatie\LaravelPdf\Facades\Pdf::assertSee(['Bali Zoo PDF']);
+        \Spatie\LaravelPdf\Facades\Pdf::assertSee(['Bali Zoo PDF', 'Catatan', 'Bawa KTP asli']);
 
         // Reports carry what is in the database, never the sample rows of the design template.
         $export('account_payable_pdf', [], 'exports.account_payable');
