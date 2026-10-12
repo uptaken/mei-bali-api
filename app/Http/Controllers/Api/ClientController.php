@@ -68,7 +68,7 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
-        $this->refuseIfUsed('Client', $client->nama, ['order' => Order::where('client_id', $client->id)->count(), 'invoice' => Invoice::where('client_id', $client->id)->count()]);
+        $this->refuseIfUsed('Client', $client->nama, ['order' => Order::where('client_id', $client->id)->count(), 'invoice' => Invoice::where('client_id', $client->id)->count()], canDeactivate: true);
         $client->delete();
 
         return response()->json(status: 204);

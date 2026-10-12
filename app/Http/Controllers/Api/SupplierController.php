@@ -52,7 +52,7 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
-        $this->refuseIfUsed('Supplier', $supplier->nama, ['order' => Order::where('supplier_id', $supplier->id)->orWhereHas('assignments', fn ($q) => $q->where('supplier_id', $supplier->id))->count()]);
+        $this->refuseIfUsed('Supplier', $supplier->nama, ['order' => Order::where('supplier_id', $supplier->id)->orWhereHas('assignments', fn ($q) => $q->where('supplier_id', $supplier->id))->count()], canDeactivate: true);
         $supplier->delete();
 
         return response()->json(status: 204);

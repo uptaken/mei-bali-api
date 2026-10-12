@@ -45,7 +45,7 @@ class VehicleController extends Controller
 
     public function destroy(Vehicle $vehicle)
     {
-        $this->refuseIfUsed('Mobil', $vehicle->nama, ['order' => Order::where('vehicle_id', $vehicle->id)->orWhereHas('assignments', fn ($q) => $q->where('vehicle_id', $vehicle->id))->count()]);
+        $this->refuseIfUsed('Mobil', $vehicle->nama, ['order' => Order::where('vehicle_id', $vehicle->id)->orWhereHas('assignments', fn ($q) => $q->where('vehicle_id', $vehicle->id))->count()], canDeactivate: true);
         $vehicle->delete();
 
         return response()->json(status: 204);

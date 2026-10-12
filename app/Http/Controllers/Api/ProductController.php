@@ -52,7 +52,7 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $this->refuseIfUsed('Produk', $product->nama, ['order' => Order::whereHas('addOns', fn ($q) => $q->where('product_id', $product->id))->count()]);
+        $this->refuseIfUsed('Produk', $product->nama, ['order' => Order::whereHas('addOns', fn ($q) => $q->where('product_id', $product->id))->count()], canDeactivate: true);
         $product->delete();
 
         return response()->json(status: 204);

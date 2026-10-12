@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
+    use \App\Models\Concerns\Archivable;
     protected $fillable = ['product_category_id', 'nama', 'harga_jual', 'modal', 'deskripsi'];
 
     protected function casts(): array

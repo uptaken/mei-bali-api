@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
+    use \App\Models\Concerns\Archivable;
     use HasFactory;
 
     protected $fillable = [

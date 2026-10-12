@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\TiketController;
 use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\LanguageController;
+use App\Http\Controllers\Api\MasterActiveController;
 use App\Http\Controllers\Api\DurationController;
 use App\Http\Controllers\Api\GuestController;
 use App\Http\Controllers\Api\BiayaDefaultController;
@@ -89,6 +90,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('whatsapp-templates', WhatsAppTemplateController::class)->only(['index', 'show']);
 
     Route::middleware('role:Admin,Super Admin')->group(function () {
+        // Nonaktifkan/aktifkan master yang sudah dipakai order (alternatif dari menghapus).
+        Route::patch('/{master}/{id}/active', [MasterActiveController::class, 'update'])
+            ->whereIn('master', ['clients', 'suppliers', 'vehicles', 'products'])->whereNumber('id');
 			Route::apiResource('countries', CountryController::class)->only(['store', 'update', 'destroy']);
 			Route::apiResource('packages', PackageController::class)->only(['store', 'update', 'destroy']);
 			Route::apiResource('languages', LanguageController::class)->only(['store', 'update', 'destroy']);

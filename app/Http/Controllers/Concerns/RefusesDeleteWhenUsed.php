@@ -13,15 +13,17 @@ trait RefusesDeleteWhenUsed
      * @param  string  $what   jenis master, mis. "Supplier"
      * @param  string  $name   nama yang tampil di pesan
      * @param  array<string, int>  $usage  label pemakaian => jumlahnya, mis. ['order' => 3, 'invoice' => 3]
+     * @param  bool  $canDeactivate  master ini bisa dinonaktifkan; pesan menyarankannya
      */
-    protected function refuseIfUsed(string $what, ?string $name, array $usage): void
+    protected function refuseIfUsed(string $what, ?string $name, array $usage, bool $canDeactivate = false): void
     {
         $used = collect($usage)->filter()->map(fn (int $count, string $label) => "{$count} {$label}")->values();
 
         abort_if(
             $used->isNotEmpty(),
             422,
-            trim("{$what} {$name}").' masih dipakai di '.$used->implode(' dan ').', jadi tidak bisa dihapus.',
+            trim("{$what} {$name}").' masih dipakai di '.$used->implode(' dan ').', jadi tidak bisa dihapus.'
+                .($canDeactivate ? ' Nonaktifkan saja agar tidak muncul di pilihan order baru.' : ''),
         );
     }
 }

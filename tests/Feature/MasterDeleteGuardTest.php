@@ -38,7 +38,7 @@ class MasterDeleteGuardTest extends TestCase
         foreach ([['clients', $client, 'Client Pemakai'], ['suppliers', $supplier, 'Supplier Wayan'], ['vehicles', $vehicle, 'Mobil Avanza'], ['products', $product, 'Produk Lunch']] as [$path, $model, $label]) {
             $this->deleteJson("/api/{$path}/{$model->id}")
                 ->assertStatus(422)
-                ->assertJsonPath('message', fn ($m) => str_starts_with($m, "{$label} masih dipakai di 1 order") && str_ends_with($m, 'tidak bisa dihapus.'));
+                ->assertJsonPath('message', fn ($m) => str_starts_with($m, "{$label} masih dipakai di 1 order") && str_contains($m, 'tidak bisa dihapus.') && str_contains($m, 'Nonaktifkan saja'));
             $this->assertModelExists($model);
         }
 
@@ -48,5 +48,27 @@ class MasterDeleteGuardTest extends TestCase
         // Not used by any order: deleting still works.
         $this->deleteJson('/api/clients/'.$spare->id)->assertNoContent();
         $this->assertModelMissing($spare);
+    }
+
+    public function test_a_used_master_can_be_deactivated_and_reactivated_without_touching_its_orders(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
+
+        $client = Client::create(['kode' => 'CLI-92', 'nama' => 'Nonaktif']);
+        $order = $this->postJson('/api/orders', [
+            'tipe' => 'ticket', 'clientId' => $client->id, 'namaOrder' => 'Lama', 'kodeGroup' => 'G-OFF', 'tanggalPemakaian' => '2026-11-10',
+            'ticketRows' => [['namaTiket' => 'Zoo', 'qty' => 1, 'modalSatuan' => 100000]],
+        ])->assertCreated()->json('id');
+
+        $this->assertTrue($this->getJson('/api/clients')->json('data.0.aktif') ?? $this->getJson('/api/clients')->json('0.aktif'));
+
+        $this->patchJson("/api/clients/{$client->id}/active", ['aktif' => false])->assertOk()->assertJsonPath('aktif', false);
+
+        // Still listed (so old orders can show its name), flagged inactive, and the order is untouched.
+        $row = collect($this->getJson('/api/clients')->json('data') ?? $this->getJson('/api/clients')->json())->firstWhere('id', $client->id);
+        $this->assertFalse($row['aktif']);
+        $this->getJson("/api/orders/{$order}")->assertOk()->assertJsonPath('client.nama', 'Nonaktif');
+
+        $this->patchJson("/api/clients/{$client->id}/active", ['aktif' => true])->assertOk()->assertJsonPath('aktif', true);
     }
 }
