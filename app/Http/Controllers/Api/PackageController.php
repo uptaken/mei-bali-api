@@ -14,13 +14,7 @@ class PackageController extends Controller
 
     public function index(Request $request)
     {
-			$arr = Package::query()->orderBy('nama')->get();
-			foreach($arr as $temp){
-				$temp->kotaTermasuk = json_decode($temp->kotaTermasuk, true);
-				$temp->hari = json_decode($temp->hari, true);
-			}
-
-      return $arr;
+        return Package::query()->orderBy('nama')->get();
     }
 
     public function store(Request $request)
@@ -36,8 +30,6 @@ class PackageController extends Controller
         ]);
 
 				$temp = Package::create($data);
-				$temp->kotaTermasuk = json_decode($temp->kotaTermasuk, true);
-				$temp->hari = json_decode($temp->hari, true);
         return response()->json($temp, 201);
     }
 
@@ -59,8 +51,6 @@ class PackageController extends Controller
         ]);
 
         $package->update($data);
-				$package->kotaTermasuk = json_decode($package->kotaTermasuk, true);
-				$package->hari = json_decode($package->hari, true);
 
         return $package;
     }

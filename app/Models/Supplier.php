@@ -15,6 +15,7 @@ class Supplier extends Model
         'nama',
         'telepon',
         'tipe_mobil',
-				'area',
+        'area',
+        'catatan',
     ];
 }

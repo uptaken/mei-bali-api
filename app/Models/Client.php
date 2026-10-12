@@ -21,6 +21,7 @@ class Client extends Model
         'kota',
         'negara',
         'catatan',
+        'alamat',
     ];
 
     public function orders(): HasMany

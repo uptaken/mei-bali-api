@@ -19,4 +19,9 @@ class Package extends Model
 				'deskripsi',
 				'hari',
     ];
+
+    protected $casts = [
+        'kotaTermasuk' => \App\Casts\FlexibleList::class,
+        'hari' => \App\Casts\FlexibleList::class,
+    ];
 }

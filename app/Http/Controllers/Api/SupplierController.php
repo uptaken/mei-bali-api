@@ -25,6 +25,7 @@ class SupplierController extends Controller
             'telepon' => ['nullable',],
             'tipe_mobil' => ['nullable', 'string'],
 						'area' => ['nullable', 'string'],
+            'catatan' => ['nullable', 'string'],
         ]);
 
         return response()->json(Supplier::create($data), 201);
@@ -43,6 +44,7 @@ class SupplierController extends Controller
             'telepon' => ['nullable',],
             'tipe_mobil' => ['nullable', 'string'],
 						'area' => ['nullable', 'string'],
+            'catatan' => ['nullable', 'string'],
         ]);
 
         $supplier->update($data);

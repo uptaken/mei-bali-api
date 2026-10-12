@@ -10,11 +10,7 @@ class CountryController extends Controller
 {
     public function index(Request $request)
     {
-			$arr = Country::query()->orderBy('nama')->get();
-			foreach($arr as $temp)
-				$temp->kota = json_decode($temp->kota, true);
-
-      return $arr;
+        return Country::query()->orderBy('nama')->get();
     }
 
     public function store(Request $request)
@@ -26,7 +22,6 @@ class CountryController extends Controller
         ]);
 
 				$temp = Country::create($data);
-				$temp->kota = json_decode($temp->kota, true);
         return response()->json($temp, 201);
     }
 
@@ -44,7 +39,6 @@ class CountryController extends Controller
         ]);
 
         $country->update($data);
-				$country->kota = json_decode($country->kota, true);
         return $country;
     }
 

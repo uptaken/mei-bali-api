@@ -38,6 +38,7 @@ class ClientController extends Controller
             'kota' => ['nullable', 'string'],
             'negara' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
+            'alamat' => ['nullable', 'string'],
         ]);
 
         $data['kode'] ??= Client::nextKode();
@@ -62,6 +63,7 @@ class ClientController extends Controller
             'kota' => ['nullable', 'string'],
             'negara' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
+            'alamat' => ['nullable', 'string'],
         ]);
 
         $client->update($data);

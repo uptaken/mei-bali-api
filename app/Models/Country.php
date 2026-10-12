@@ -15,4 +15,6 @@ class Country extends Model
         'nama',
         'kota',
     ];
+
+    protected $casts = ['kota' => \App\Casts\FlexibleList::class];
 }
