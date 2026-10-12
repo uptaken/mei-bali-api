@@ -28,7 +28,8 @@ class ClientController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'kode' => ['required', 'string', 'unique:clients,kode'],
+            // Boleh kosong: form Client tidak punya kolom kode, jadi server memberi kode berikutnya (CLI-01, CLI-02, ...).
+            'kode' => ['nullable', 'string', 'unique:clients,kode'],
             'nama' => ['required', 'string'],
             'tipe' => ['nullable', 'string'],
             'kontak' => ['nullable', 'string'],
@@ -38,6 +39,8 @@ class ClientController extends Controller
             'negara' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
         ]);
+
+        $data['kode'] ??= Client::nextKode();
 
         return response()->json(Client::create($data), 201);
     }

@@ -71,4 +71,14 @@ class MasterDeleteGuardTest extends TestCase
 
         $this->patchJson("/api/clients/{$client->id}/active", ['aktif' => true])->assertOk()->assertJsonPath('aktif', true);
     }
+
+    public function test_a_client_without_a_kode_gets_the_next_one(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
+        Client::create(['kode' => 'CLI-07', 'nama' => 'Lama']);
+
+        $this->postJson('/api/clients', ['nama' => 'Baru', 'tipe' => 'Agen', 'kontak' => 'PIC'])->assertCreated()->assertJsonPath('kode', 'CLI-08');
+        $this->postJson('/api/clients', ['nama' => 'Baru 2', 'kontak' => 'PIC'])->assertCreated()->assertJsonPath('kode', 'CLI-09');
+        $this->postJson('/api/clients', ['kode' => 'CLI-ABC', 'nama' => 'Manual'])->assertCreated()->assertJsonPath('kode', 'CLI-ABC');
+    }
 }

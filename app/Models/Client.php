@@ -27,4 +27,16 @@ class Client extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+    /** Kode berikutnya untuk client baru: CLI-01, CLI-02, ... (angka terbesar yang sudah ada + 1, dilewati bila bentrok). */
+    public static function nextKode(): string
+    {
+        $next = static::query()->pluck('kode')->map(fn ($kode) => (int) preg_replace('/\D/', '', $kode))->max() + 1;
+
+        while (static::where('kode', sprintf('CLI-%02d', $next))->exists()) {
+            $next++;
+        }
+
+        return sprintf('CLI-%02d', $next);
+    }
 }
