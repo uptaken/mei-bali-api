@@ -57,7 +57,8 @@ class PayablesService
             }
         }
 
-        return $out->values();
+        // Terbaru di atas: tanggal order (pemakaian untuk Ticket) terbaru dulu, lalu order yang lebih baru dibuat; tanpa tanggal di bawah.
+        return $out->sort(fn ($a, $b) => [$b['tanggalOrder'] ?? '', $b['orderId']] <=> [$a['tanggalOrder'] ?? '', $a['orderId']])->values();
     }
 
     /** One Tagihan per Supplier/Driver, itemised one per costed vehicle assignment (a day may carry several). */

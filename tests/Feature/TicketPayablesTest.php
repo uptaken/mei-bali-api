@@ -37,4 +37,19 @@ class TicketPayablesTest extends TestCase
         // A ticket order is dated by its usage date, so the month filter on the Tagihan screen can find it.
         $this->assertSame('2026-11-10', $tagihan->firstWhere('orderId', $noVendor)['tanggalOrder']);
     }
+
+    public function test_tagihan_are_listed_newest_first(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
+        $client = Client::create(['kode' => 'CLI-51', 'nama' => 'Urutan']);
+
+        foreach (['2026-11-05', '2026-11-20', '2026-11-12'] as $date) {
+            $this->postJson('/api/orders', [
+                'tipe' => 'ticket', 'clientId' => $client->id, 'namaOrder' => $date, 'kodeGroup' => 'G-URUT', 'tanggalPemakaian' => $date,
+                'ticketRows' => [['namaTiket' => 'Zoo', 'qty' => 1, 'modalSatuan' => 100000, 'supplierNama' => 'Vendor']],
+            ])->assertCreated();
+        }
+
+        $this->assertSame(['2026-11-20', '2026-11-12', '2026-11-05'], collect($this->getJson('/api/payables')->json('data'))->pluck('tanggalOrder')->all());
+    }
 }
