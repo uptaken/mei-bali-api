@@ -41,7 +41,9 @@ class PayablesService
                 'kode' => $order->kode,
                 'namaOrder' => $order->nama_order,
                 'namaTamu' => $namaTamu,
-                'tanggalOrder' => optional($order->tanggal_mulai)->toDateString(),
+                // Order Ticket tidak punya tanggal mulai; tanggal pemakaiannya yang berlaku (tanpa ini tagihan tiket tak punya tanggal
+                // dan tersaring habis oleh filter bulan di layar Tagihan).
+                'tanggalOrder' => optional($order->tanggal_mulai ?? $order->tanggal_pemakaian)->toDateString(),
             ];
 
             $out = $out->merge($this->transportGroups($order, $base));
@@ -122,15 +124,18 @@ class PayablesService
         return $byNama->map(fn ($entry) => $this->buildGroup($base, 'tour', null, $entry['nama'], $entry['items']))->values();
     }
 
-    /** One Tagihan per Supplier Tiket name, itemised by ticket cart line. */
+    /**
+     * One Tagihan per Supplier Tiket name, itemised by ticket cart line. A line whose supplier was never
+     * filled in is still a bill to pay, so it is listed under "Supplier belum diisi" instead of vanishing.
+     */
     private function ticketGroups(Order $order, array $base): Collection
     {
         $byNama = collect();
 
         foreach ($order->ticketRows as $row) {
-            $nama = trim((string) $row->supplier_nama);
+            $nama = trim((string) $row->supplier_nama) ?: 'Supplier belum diisi';
             $modal = $row->qty * $row->modal_satuan;
-            if ($nama === '' || $modal <= 0) {
+            if ($modal <= 0) {
                 continue;
             }
             $key = mb_strtolower($nama);

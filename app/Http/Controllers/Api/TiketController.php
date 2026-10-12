@@ -44,6 +44,7 @@ class TiketController extends Controller
             'harga_jual' => [$required, 'integer', 'min:0'],
             'modal' => [$required, 'integer', 'min:0'],
             'status' => [$required, 'in:Aktif,Nonaktif'],
+            'supplier_nama' => ['nullable', 'string'],
         ]);
     }
 }

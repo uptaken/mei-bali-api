@@ -9,7 +9,7 @@ class Tiket extends Model
 {
     protected $table = 'tikets';
 
-    protected $fillable = ['nama', 'kategori', 'harga_jual', 'modal', 'status'];
+    protected $fillable = ['nama', 'kategori', 'harga_jual', 'modal', 'status', 'supplier_nama'];
 
     protected function casts(): array
     {
