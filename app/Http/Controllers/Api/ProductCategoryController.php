@@ -20,7 +20,7 @@ class ProductCategoryController extends Controller
     public function store(Request $request)
     {
         return response()->json(ProductCategory::create($request->validate([
-            'nama' => ['required', 'string'],
+            'nama' => ['required', 'string', 'max:255'],
             'deskripsi' => ['nullable', 'string'],
         ])), 201);
     }
@@ -33,7 +33,7 @@ class ProductCategoryController extends Controller
     public function update(Request $request, ProductCategory $productCategory)
     {
         $productCategory->update($request->validate([
-            'nama' => ['sometimes', 'string'],
+            'nama' => ['sometimes', 'string', 'max:255'],
             'deskripsi' => ['nullable', 'string'],
         ]));
 

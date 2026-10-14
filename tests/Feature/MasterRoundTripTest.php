@@ -38,4 +38,21 @@ class MasterRoundTripTest extends TestCase
         $this->postJson('/api/packages', ['nama' => 'Bali 2D', 'durasiHari' => 2, 'hargaMulai' => 1000000, 'kotaTermasuk' => ['Ubud', 'Kuta'], 'deskripsi' => 'x', 'hari' => [['hari' => 1, 'judul' => 'Ubud', 'kota' => 'Ubud']]])
             ->assertCreated()->assertJsonPath('kotaTermasuk', ['Ubud', 'Kuta'])->assertJsonPath('hari.0.judul', 'Ubud');
     }
+
+    public function test_bad_master_input_is_refused_with_a_readable_message_not_a_server_error(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
+
+        // A duplicate kode used to hit the database constraint and answer 500.
+        $this->postJson('/api/countries', ['kode' => 'ZZ', 'nama' => 'A'])->assertCreated();
+        $this->postJson('/api/countries', ['kode' => 'ZZ', 'nama' => 'B'])->assertStatus(422)->assertJsonValidationErrors('kode');
+        $this->postJson('/api/languages', ['kode' => 'en', 'nama' => 'English'])->assertCreated();
+        $second = $this->postJson('/api/languages', ['kode' => 'id', 'nama' => 'Indonesia'])->assertCreated()->json('id');
+        $this->patchJson("/api/languages/{$second}", ['kode' => 'en'])->assertStatus(422)->assertJsonValidationErrors('kode');
+        $this->patchJson("/api/languages/{$second}", ['kode' => 'id', 'nama' => 'Bahasa'])->assertOk(); // keeping its own kode is fine
+
+        // Names longer than the column would fail on MySQL with "Data too long".
+        $this->postJson('/api/suppliers', ['nama' => str_repeat('x', 300), 'telepon' => '0812'])->assertStatus(422)->assertJsonValidationErrors('nama');
+        $this->postJson('/api/vehicles', ['nama' => 'Minus', 'kapasitas' => -5])->assertStatus(422)->assertJsonValidationErrors('kapasitas');
+    }
 }

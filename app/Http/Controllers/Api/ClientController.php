@@ -30,7 +30,7 @@ class ClientController extends Controller
         $data = $request->validate([
             // Boleh kosong: form Client tidak punya kolom kode, jadi server memberi kode berikutnya (CLI-01, CLI-02, ...).
             'kode' => ['nullable', 'string', 'unique:clients,kode'],
-            'nama' => ['required', 'string'],
+            'nama' => ['required', 'string', 'max:255'],
             'tipe' => ['nullable', 'string'],
             'kontak' => ['nullable', 'string'],
             'telepon' => ['nullable',],
@@ -55,7 +55,7 @@ class ClientController extends Controller
     {
         $data = $request->validate([
             'kode' => ['sometimes', 'string', 'unique:clients,kode,'.$client->id],
-            'nama' => ['sometimes', 'string'],
+            'nama' => ['sometimes', 'string', 'max:255'],
             'tipe' => ['nullable', 'string'],
             'kontak' => ['nullable', 'string'],
             'telepon' => ['nullable',],

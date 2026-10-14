@@ -39,7 +39,7 @@ class WhatsAppTemplateController extends Controller
     {
         $required = $partial ? 'sometimes' : 'required';
         return $request->validate([
-            'nama' => [$required, 'string'],
+            'nama' => [$required, 'string', 'max:255'],
             'kategori' => ['nullable', 'string'],
             'isi' => [$required, 'string'],
             'variabel' => ['nullable', 'array'],

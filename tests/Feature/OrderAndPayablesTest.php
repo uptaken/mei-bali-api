@@ -269,6 +269,8 @@ class OrderAndPayablesTest extends TestCase
         $this->assertSame('6281234567890@c.us', \App\Jobs\SendWhatsAppMessageJob::chatId('0812-3456 7890'));
         $this->assertSame('6281234567890@c.us', \App\Jobs\SendWhatsAppMessageJob::chatId('+62 812 3456 7890'));
         $this->assertSame('61412345678@c.us', \App\Jobs\SendWhatsAppMessageJob::chatId('+61 412 345 678'));
+        // A number saved without its leading 0 (typed into a number field) still reaches the right person.
+        $this->assertSame('6281234567890@c.us', \App\Jobs\SendWhatsAppMessageJob::chatId('81234567890'));
     }
 
     public function test_confirming_a_supplier_queues_the_whatsapp_message_and_returns_the_whole_order(): void

@@ -21,7 +21,7 @@ class ProductController extends Controller
     {
         $data = $request->validate([
             'product_category_id' => ['nullable', 'exists:product_categories,id'],
-            'nama' => ['required', 'string'],
+            'nama' => ['required', 'string', 'max:255'],
             'harga_jual' => ['required', 'integer', 'min:0'],
             'modal' => ['required', 'integer', 'min:0'],
             'deskripsi' => ['nullable', 'string'],
@@ -39,7 +39,7 @@ class ProductController extends Controller
     {
         $data = $request->validate([
             'product_category_id' => ['nullable', 'exists:product_categories,id'],
-            'nama' => ['sometimes', 'string'],
+            'nama' => ['sometimes', 'string', 'max:255'],
             'harga_jual' => ['sometimes', 'integer', 'min:0'],
             'modal' => ['sometimes', 'integer', 'min:0'],
             'deskripsi' => ['nullable', 'string'],

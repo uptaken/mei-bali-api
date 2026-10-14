@@ -20,7 +20,7 @@ class GuestController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nama' => ['required', 'string',],
+            'nama' => ['required', 'string', 'max:255'],
             'kategori' => ['required', 'string',],
             'clientId' => ['nullable', 'string',],
 						'negara' => ['nullable', 'string',],
@@ -42,7 +42,7 @@ class GuestController extends Controller
     public function update(Request $request, Guest $guest)
     {
         $data = $request->validate([
-            'nama' => ['required', 'string',],
+            'nama' => ['required', 'string', 'max:255'],
 						'kategori' => ['required', 'string',],
 						'clientId' => ['nullable', 'string',],
 						'negara' => ['nullable', 'string',],

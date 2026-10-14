@@ -16,8 +16,8 @@ class CountryController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'kode' => ['required', 'string',],
-            'nama' => ['required', 'string'],
+            'kode' => ['required', 'string', 'max:255', 'unique:countries,kode'],
+            'nama' => ['required', 'string', 'max:255'],
             'kota' => ['nullable',],
         ]);
 
@@ -33,8 +33,8 @@ class CountryController extends Controller
     public function update(Request $request, Country $country)
     {
         $data = $request->validate([
-            'kode' => ['sometimes', 'string',],
-            'nama' => ['sometimes', 'string'],
+            'kode' => ['sometimes', 'string', 'max:255', 'unique:countries,kode,'.$country->id],
+            'nama' => ['sometimes', 'string', 'max:255'],
             'kota' => ['nullable',],
         ]);
 

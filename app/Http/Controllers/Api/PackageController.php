@@ -21,7 +21,7 @@ class PackageController extends Controller
     {
         $data = $request->validate([
             // 'kode' => ['required', 'string',],
-            'nama' => ['required', 'string'],
+            'nama' => ['required', 'string', 'max:255'],
 						'durasiHari' => ['integer', ],
 						'hargaMulai' => ['integer', ],
 						'kotaTermasuk' => ['nullable', ],
@@ -42,7 +42,7 @@ class PackageController extends Controller
     {
         $data = $request->validate([
             // 'kode' => ['sometimes', 'string',],
-            'nama' => ['required', 'string'],
+            'nama' => ['required', 'string', 'max:255'],
 						'durasiHari' => ['integer', ],
 						'hargaMulai' => ['integer', ],
 						'kotaTermasuk' => ['nullable', ],

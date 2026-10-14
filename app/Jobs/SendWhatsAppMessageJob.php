@@ -35,13 +35,16 @@ class SendWhatsAppMessageJob implements ShouldQueue
         public readonly ?int $sentByUserId = null,
     ) {}
 
-    /** WhatsApp wants the number in international form: digits only, with Indonesia's 62 in place of a leading 0. */
+    /** WhatsApp wants the number in international form: digits only, with Indonesia's 62 in place of a leading 0 (or added when the 0 is missing). */
     public static function chatId(string $phone): string
     {
         $digits = preg_replace('/\D+/', '', $phone);
 
+        // 0812… -> 62812…; 812… (leading 0 lost when typed as a number) -> 62812…; 62812… stays.
         if (str_starts_with($digits, '0')) {
             $digits = '62'.substr($digits, 1);
+        } elseif (str_starts_with($digits, '8')) {
+            $digits = '62'.$digits;
         }
 
         return $digits.'@c.us';

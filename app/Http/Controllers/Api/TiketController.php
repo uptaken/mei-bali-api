@@ -39,7 +39,7 @@ class TiketController extends Controller
     {
         $required = $partial ? 'sometimes' : 'required';
         return $request->validate([
-            'nama' => [$required, 'string'],
+            'nama' => [$required, 'string', 'max:255'],
             'kategori' => [$required, 'string'],
             'harga_jual' => [$required, 'integer', 'min:0'],
             'modal' => [$required, 'integer', 'min:0'],

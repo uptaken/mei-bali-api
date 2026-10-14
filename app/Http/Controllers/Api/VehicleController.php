@@ -20,8 +20,8 @@ class VehicleController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nama' => ['required', 'string'],
-            'kapasitas' => ['integer', ],
+            'nama' => ['required', 'string', 'max:255'],
+            'kapasitas' => ['integer', 'min:0'],
 						'kategori' => ['nullable', 'string'],
 						'catatan' => ['nullable', 'string'],
         ]);
@@ -32,8 +32,8 @@ class VehicleController extends Controller
     public function update(Request $request, Vehicle $vehicle)
     {
         $data = $request->validate([
-            'nama' => ['sometimes', 'string'],
-            'kapasitas' => ['integer', ],
+            'nama' => ['sometimes', 'string', 'max:255'],
+            'kapasitas' => ['integer', 'min:0'],
 						'kategori' => ['nullable', 'string'],
 						'catatan' => ['nullable', 'string'],
         ]);

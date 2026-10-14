@@ -20,7 +20,7 @@ class DurationController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'label' => ['required', 'string',],
+            'label' => ['required', 'string', 'max:255'],
             'perkiraanJam' => ['required', 'string'],
             'catatan' => ['nullable',],
         ]);
@@ -38,7 +38,7 @@ class DurationController extends Controller
     public function update(Request $request, Duration $duration)
     {
         $data = $request->validate([
-            'label' => ['sometimes', 'string',],
+            'label' => ['sometimes', 'string', 'max:255'],
             'perkiraanJam' => ['sometimes', 'string'],
             'catatan' => ['nullable',],
         ]);
