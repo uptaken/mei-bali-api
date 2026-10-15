@@ -38,7 +38,7 @@ class OrderController extends Controller
 
         $arrOrder = Order::query()
             ->with(['client', 'supplier', 'vehicle', 'assignments', 'events' => fn ($query) => $query->select('id', 'order_id', 'kind', 'actor_id', 'at', 'detail')->orderBy('id'), 'itineraryDays' => function ($query) {
-							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir',)
+							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir', 'catatan',)
 								->with([ 'activities', ])
 								->withSum('activities as totalBiaya', 'biaya');
 						}, 'addOns', 'ticketRows', 'guests', 'layananDetail', 'invoices' => function ($query) {

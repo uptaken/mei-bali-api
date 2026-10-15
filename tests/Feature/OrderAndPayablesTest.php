@@ -336,7 +336,7 @@ class OrderAndPayablesTest extends TestCase
         ])->assertCreated();
 
         $tour = $create(['tipe' => 'tour', 'namaOrder' => 'Tour PDF',
-            'itinerary' => [['hari' => 1, 'tempatPenjemputan' => 'Hotel Sanur', 'aktivitas' => [['aktivitas' => 'Snorkeling', 'biaya' => 100000]]]],
+            'itinerary' => [['hari' => 1, 'tempatPenjemputan' => 'Hotel Sanur', 'catatan' => 'Tamu vegetarian', 'aktivitas' => [['aktivitas' => 'Snorkeling', 'biaya' => 100000]]]],
             'assignments' => [['hari' => 1, 'vehicleId' => $vehicle->id, 'supplierId' => $supplier->id, 'biayaTransportModal' => 300000]]]);
         $layanan = $create(['tipe' => 'layanan', 'subTipe' => 'transfer', 'namaOrder' => 'Transfer PDF',
             'layananDetail' => ['namaTamu' => 'Tamu PDF', 'pickUpPoint' => 'Bandara PDF', 'dropOffPoint' => 'Hotel PDF', 'jumlahPax' => 2, 'biayaModal' => 0]]);
@@ -355,7 +355,7 @@ class OrderAndPayablesTest extends TestCase
 
         // An Order is printed in the layout of its type, with its own details.
         $export('order_pdf', ['id' => $tour->json('id')], 'exports.itinerary_tour');
-        \Spatie\LaravelPdf\Facades\Pdf::assertSee(['Snorkeling', 'Hotel Sanur']);
+        \Spatie\LaravelPdf\Facades\Pdf::assertSee(['Snorkeling', 'Hotel Sanur', 'Tamu vegetarian']);
         $export('order_pdf', ['id' => $layanan->json('id')], 'exports.itinerary_service');
         \Spatie\LaravelPdf\Facades\Pdf::assertSee(['Konfirmasi Layanan · Transfer', 'Tamu PDF', 'Bandara PDF', 'Hotel PDF']);
         $export('order_pdf', ['id' => $ticket->json('id')], 'exports.itinerary_ticket');

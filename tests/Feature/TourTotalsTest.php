@@ -27,7 +27,7 @@ class TourTotalsTest extends TestCase
             'tipe' => 'tour', 'clientId' => $client->id, 'namaOrder' => 'Totals', 'kodeGroup' => 'G-TOT',
             'tanggalMulai' => '2026-11-10', 'durasiHari' => 2,
             'itinerary' => [
-                ['hari' => 1, 'aktivitas' => [['aktivitas' => 'Snorkeling', 'biaya' => 1000000, 'supplierTur' => 'Bali Dive'], ['aktivitas' => 'Lunch', 'biaya' => 250000, 'supplierTur' => 'Bali Dive'], ['aktivitas' => 'Welcome drink', 'biaya' => 0, 'skipBiaya' => true]]],
+                ['hari' => 1, 'catatan' => 'Tamu vegetarian', 'aktivitas' => [['aktivitas' => 'Snorkeling', 'biaya' => 1000000, 'supplierTur' => 'Bali Dive'], ['aktivitas' => 'Lunch', 'biaya' => 250000, 'supplierTur' => 'Bali Dive'], ['aktivitas' => 'Welcome drink', 'biaya' => 0, 'skipBiaya' => true]]],
                 ['hari' => 2, 'aktivitas' => [['aktivitas' => 'Rafting', 'biaya' => 500000, 'supplierTur' => 'Ayung Rafting']]],
             ],
             'assignments' => [
@@ -48,6 +48,9 @@ class TourTotalsTest extends TestCase
 
         $payables = collect($this->getJson('/api/payables')->json('data'))->where('orderId', $order->json('id'));
         $this->assertSame($expected, (int) $payables->sum('modal'), 'payables modal');
+
+        // The list the screens read from carries each day's catatan too.
+        $this->assertSame('Tamu vegetarian', $list['itinerary_days'][0]['catatan']);
 
         // Editing the order keeps the figure.
         $this->patchJson('/api/orders/'.$order->json('id'), ['catatan' => 'x'])->assertOk();

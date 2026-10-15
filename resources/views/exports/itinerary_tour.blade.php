@@ -80,6 +80,10 @@
 						@else
 							<p class="note mt-2">Belum ada aktivitas untuk hari ini.</p>
 						@endif
+
+						@if (filled($day->catatan))
+							<p class="mt-2"><strong>Catatan:</strong> {{ $day->catatan }}</p>
+						@endif
 					</div>
 				</article>
 			@endforeach
