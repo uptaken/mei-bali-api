@@ -23,7 +23,7 @@ class SupplierController extends Controller
             // 'kode' => ['required', 'string', 'unique:suppliers,kode'],
             'nama' => ['required', 'string', 'max:255'],
             'telepon' => ['nullable',],
-            'tipe_mobil' => ['nullable', 'string'],
+            'nama_driver' => ['nullable', 'string', 'max:255'],
 						'area' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
         ]);
@@ -42,7 +42,7 @@ class SupplierController extends Controller
             // 'kode' => ['sometimes', 'string', 'unique:suppliers,kode,'.$supplier->id],
             'nama' => ['sometimes', 'string', 'max:255'],
             'telepon' => ['nullable',],
-            'tipe_mobil' => ['nullable', 'string'],
+            'nama_driver' => ['nullable', 'string', 'max:255'],
 						'area' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
         ]);

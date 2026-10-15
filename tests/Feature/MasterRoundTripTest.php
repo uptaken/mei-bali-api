@@ -17,8 +17,8 @@ class MasterRoundTripTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
 
-        $supplier = $this->postJson('/api/suppliers', ['nama' => 'Wayan', 'telepon' => '0812', 'tipe_mobil' => 'Avanza', 'area' => 'Ubud', 'catatan' => 'Fasih bahasa Inggris'])
-            ->assertCreated()->assertJsonPath('area', 'Ubud')->assertJsonPath('catatan', 'Fasih bahasa Inggris');
+        $supplier = $this->postJson('/api/suppliers', ['nama' => 'Wayan', 'telepon' => '0812', 'nama_driver' => 'Komang', 'area' => 'Ubud', 'catatan' => 'Fasih bahasa Inggris'])
+            ->assertCreated()->assertJsonPath('nama_driver', 'Komang')->assertJsonPath('area', 'Ubud')->assertJsonPath('catatan', 'Fasih bahasa Inggris');
         $this->patchJson('/api/suppliers/'.$supplier->json('id'), ['area' => 'Kuta'])->assertOk()->assertJsonPath('area', 'Kuta');
 
         $this->postJson('/api/vehicles', ['nama' => 'Hiace', 'kapasitas' => 12, 'kategori' => 'Minibus', 'catatan' => 'AC'])

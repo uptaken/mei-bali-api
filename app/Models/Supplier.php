@@ -14,7 +14,7 @@ class Supplier extends Model
         'kode',
         'nama',
         'telepon',
-        'tipe_mobil',
+        'nama_driver',
         'area',
         'catatan',
     ];
