@@ -155,6 +155,11 @@ class OrderService
             $columns['durasi_hari'] = count($data['itinerary']);
         }
 
+        // Order Layanan: jam order mengikuti jam jemput bila tidak dikirim terpisah (kolom Jam di daftar order).
+        if (! isset($columns['jam_mulai']) && ! empty($data['layananDetail']['jamJemput'])) {
+            $columns['jam_mulai'] = $data['layananDetail']['jamJemput'];
+        }
+
         // dewasa / anak are NOT NULL, but the frontend may send null for an untouched field.
         foreach (['dewasa', 'anak'] as $column) {
             if (array_key_exists($column, $columns)) {

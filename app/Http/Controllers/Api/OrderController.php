@@ -113,7 +113,8 @@ class OrderController extends Controller
 							$temp->detail = 'Transport: '.(!empty($temp->vehicle) && !empty($temp->supplier) ? $temp->vehicle->nama.' - '.$temp->supplier->nama : '-');
 						}
 						else if(isset($temp->modal)){
-							$totalItems += $temp->modal;
+							// Add-on: modal per unit x qty (kolom `modal` menyimpan harga satuan).
+							$totalItems += ($temp->qty ?? 1) * $temp->modal;
 							// $temp->modal = $temp->biaya_transport_modal;
 							$temp->detail = 'Add Ons: '.(!empty($temp->product) ? $temp->qty.'x '.$temp->product->nama : '-');
 						}
