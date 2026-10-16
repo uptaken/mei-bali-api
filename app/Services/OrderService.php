@@ -127,8 +127,9 @@ class OrderService
             $supplierNames = $this->assignedSupplierNames($order);
             $invoice = $this->syncInvoice($order, $actor, $supplierNames);
 
-            // A changed Supplier/Driver or vehicle is the one edit worth its own Riwayat entry, on the Order and on its Invoice.
-            if ($this->assignmentSignature($order) !== $assignedBefore && $this->costedAssignments($order)->isNotEmpty()) {
+            // Giving a Supplier/Driver (or changing who it is) is worth its own Riwayat entry, on the Order and on its Invoice.
+            // Picking only a vehicle, or changing a cost, is an ordinary edit: "Supplier/Driver ditugaskan" would be untrue.
+            if ($this->assignmentSignature($order) !== $assignedBefore && $supplierNames !== '') {
                 $assigned = [['kind' => 'assigned', 'detail' => $supplierNames ?: null]];
                 $this->logEvents($order->events(), $actor, $assigned);
                 $this->logEvents($invoice->events(), $actor, $assigned);

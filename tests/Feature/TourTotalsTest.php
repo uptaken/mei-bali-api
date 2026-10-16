@@ -56,4 +56,26 @@ class TourTotalsTest extends TestCase
         $this->patchJson('/api/orders/'.$order->json('id'), ['catatan' => 'x'])->assertOk();
         $this->assertSame($expected, $this->getJson('/api/orders/'.$order->json('id'))->json('total'));
     }
+
+    public function test_riwayat_only_says_supplier_assigned_when_a_supplier_really_was(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
+        $client = Client::create(['kode' => 'CLI-60', 'nama' => 'Riwayat']);
+        $supplier = Supplier::create(['kode' => 'SUP-60', 'nama' => 'Wayan', 'telepon' => '0812']);
+        $vehicle = Vehicle::create(['nama' => 'Avanza', 'kapasitas' => 5]);
+
+        $id = $this->postJson('/api/orders', [
+            'tipe' => 'layanan', 'subTipe' => 'check_out', 'clientId' => $client->id, 'namaOrder' => 'R', 'kodeGroup' => 'G-R',
+            'tanggalMulai' => '2026-11-20', 'layananDetail' => ['namaTamu' => 'T', 'pickUpPoint' => 'H', 'jamJemput' => '08:00', 'jumlahPax' => 1],
+        ])->assertCreated()->json('id');
+
+        $kinds = fn () => collect($this->getJson("/api/orders/{$id}")->json('events'))->pluck('kind')->all();
+        $edit = fn (array $assignment) => $this->patchJson("/api/orders/{$id}", ['assignments' => [['hari' => 1, ...$assignment]]])->assertOk();
+
+        $edit(['vehicleId' => $vehicle->id, 'biayaTransportModal' => 500000]);          // vehicle only: nobody was assigned yet
+        $edit(['vehicleId' => $vehicle->id, 'supplierId' => $supplier->id, 'biayaTransportModal' => 500000]); // now a supplier is
+        $edit(['vehicleId' => $vehicle->id, 'supplierId' => $supplier->id, 'biayaTransportModal' => 650000]); // only the cost changed
+
+        $this->assertSame(['created', 'confirmed', 'updated', 'assigned', 'updated'], $kinds());
+    }
 }
