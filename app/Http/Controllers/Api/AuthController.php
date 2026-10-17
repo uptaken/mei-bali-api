@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use App\Support\Notify;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -61,7 +61,7 @@ class AuthController extends Controller
 
         $user->update($data);
 
-				Mail::to($user->email)->send(new ChangeProfileNotification($user));
+				Notify::mail($user->email, new ChangeProfileNotification($user));
 
         return response()->json($user->fresh());
     }
@@ -79,7 +79,7 @@ class AuthController extends Controller
         // Perangkat lain yang memakai password lama harus masuk ulang; sesi yang sedang dipakai tetap hidup.
         $user->tokens()->where('id', '!=', $user->currentAccessToken()->id ?? 0)->delete();
 
-        Mail::to($user->email)->send(new ChangePasswordNotification($user));
+        Notify::mail($user->email, new ChangePasswordNotification($user));
 
         return response()->json(['message' => 'Kata sandi berhasil diperbarui.']);
     }
@@ -108,7 +108,7 @@ class AuthController extends Controller
             $user->forceFill(['password' => Hash::make($password), 'remember_token' => Str::random(60)])->save();
             $user->tokens()->delete();
 
-            Mail::to($user->email)->send(new ChangePasswordNotification($user));
+            Notify::mail($user->email, new ChangePasswordNotification($user));
         });
 
         if ($status !== Password::PASSWORD_RESET) {

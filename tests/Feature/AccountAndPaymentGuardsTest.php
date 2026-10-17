@@ -45,4 +45,15 @@ class AccountAndPaymentGuardsTest extends TestCase
             'current_password' => 'password1', 'password' => 'abc', 'password_confirmation' => 'abc',
         ])->assertStatus(422);
     }
+
+    public function test_mail_failure_does_not_break_saving(): void
+    {
+        \Illuminate\Support\Facades\Mail::shouldReceive('to')->andThrow(new \RuntimeException('smtp down'));
+        $super = User::factory()->create(['role' => 'Super Admin']);
+
+        $this->actingAs($super, 'sanctum')->postJson('/api/users', [
+            'nama' => 'Baru', 'email' => 'baru@example.com', 'role' => 'Operator',
+        ])->assertCreated();
+        $this->assertDatabaseHas('users', ['email' => 'baru@example.com']);
+    }
 }

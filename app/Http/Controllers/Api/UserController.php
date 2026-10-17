@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use App\Support\Notify;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -38,7 +38,7 @@ class UserController extends Controller
         $token = Password::createToken($user);
         $url = config('app.frontend_url').'/reset-password?'.http_build_query(['token' => $token, 'email' => $user->email]);
 
-        Mail::to($user->email)->send(new RegistrationNotification($user, $url, (int) config('auth.passwords.users.expire')));
+        Notify::mail($user->email, new RegistrationNotification($user, $url, (int) config('auth.passwords.users.expire')));
 
         return response()->json($user, 201);
     }
@@ -59,9 +59,9 @@ class UserController extends Controller
         $user->update($data);
 
         if (isset($data['password'])) {
-            Mail::to($user->email)->send(new ChangePasswordNotification($user));
+            Notify::mail($user->email, new ChangePasswordNotification($user));
         } else {
-            Mail::to($user->email)->send(new ChangeProfileNotification($user));
+            Notify::mail($user->email, new ChangeProfileNotification($user));
         }
 
         return $user;
