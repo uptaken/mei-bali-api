@@ -111,6 +111,10 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Isi Harga Jual untuk semua item sebelum ditagihkan.'], 422);
         }
 
+        if ($invoice->status === InvoiceStatus::SudahDitagihkan) {
+            return $invoice->fresh(self::WITH);
+        }
+
         $invoice->update(['status' => InvoiceStatus::SudahDitagihkan->value, 'tanggal_ditagihkan' => now()->toDateString()]);
         $invoice->events()->create(['kind' => 'billed', 'actor_id' => $request->user()->id, 'at' => now()]);
 
@@ -139,7 +143,9 @@ class InvoiceController extends Controller
     {
         $data = $request->validate(['amount' => ['required', 'integer', 'min:1']]);
 
-        $newSisa = max(0, $invoice->sisa - $data['amount']);
+        abort_if($data['amount'] > $invoice->sisa, 422, 'Jumlah pembayaran melebihi sisa tagihan (Rp '.number_format($invoice->sisa, 0, ',', '.').').');
+
+        $newSisa = $invoice->sisa - $data['amount'];
         $invoice->update(['sisa' => $newSisa]);
         $invoice->events()->create([
             'kind' => 'payment', 'actor_id' => $request->user()->id, 'at' => now(),

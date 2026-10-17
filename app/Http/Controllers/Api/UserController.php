@@ -53,6 +53,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $this->validated($request, true);
+        abort_if(isset($data['role']) && $user->is($request->user()) && $data['role'] !== $user->role->value, 422, 'Anda tidak dapat mengubah peran akun sendiri.');
         if (isset($data['password'])) $data['password'] = Hash::make($data['password']);
         unset($data['password_confirmation']);
         $user->update($data);

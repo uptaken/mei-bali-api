@@ -71,11 +71,13 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'string', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $user = $request->user();
         $user->update(['password' => Hash::make($data['password'])]);
+        // Perangkat lain yang memakai password lama harus masuk ulang; sesi yang sedang dipakai tetap hidup.
+        $user->tokens()->where('id', '!=', $user->currentAccessToken()->id ?? 0)->delete();
 
         Mail::to($user->email)->send(new ChangePasswordNotification($user));
 
