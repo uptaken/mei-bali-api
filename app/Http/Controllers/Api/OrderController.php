@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 /**
  * Endpoint order: daftar, detail, buat, ubah, selesai, dan alur pembatalan.
@@ -142,13 +143,27 @@ class OrderController extends Controller
 				}
 
 
+				// Operator tidak boleh melihat Harga Jual dan margin yang ada di invoice.
+				if (!$request->user()->role->canSeePricing())
+					$arrOrder->getCollection()->each->unsetRelation('invoices');
+
 				return $arrOrder;
     }
 
     /** GET /api/orders/{order} — satu order lengkap dengan semua relasinya. */
-    public function show(Order $order)
+    public function show(Request $request, Order $order)
     {
-        return $order->load(self::WITH);
+        return $this->visibleTo($order->load(self::WITH), $request);
+    }
+
+    /** Order apa adanya untuk Admin/Super Admin; tanpa invoice (Harga Jual, margin) untuk Operator. */
+    private function visibleTo(Order $order, Request $request): Order
+    {
+        if (! $request->user()->role->canSeePricing()) {
+            $order->unsetRelation('invoices');
+        }
+
+        return $order;
     }
 
     /**
@@ -243,9 +258,14 @@ class OrderController extends Controller
     {
         $data = $request->validate($this->orderRules(isCreate: false));
 
+        // Operator hanya menugaskan mobil/supplier/driver: bagian lain dari order yang ikut terkirim diabaikan.
+        if (! $request->user()->role->canCreateOrder()) {
+            $data = Arr::only($data, ['assignments']);
+        }
+
 				$order = $this->orderService->update($order, $data, $request->user());
 
-        return $order->load(self::WITH);
+        return $this->visibleTo($order->load(self::WITH), $request);
     }
 
 		/** PATCH /api/orders/lines/{order} — ubah cepat field induk saja (tanpa tamu, itinerary, add-on, atau invoice). */

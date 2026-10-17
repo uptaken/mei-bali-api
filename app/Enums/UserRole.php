@@ -17,6 +17,7 @@ enum UserRole: string
         return $this !== self::Operator;
     }
 
+    /** Harga Jual, margin, invoice, tagihan, dan laporan keuangan: Operator tidak boleh melihatnya. */
     public function canSeePricing(): bool
     {
         return $this !== self::Operator;

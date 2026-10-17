@@ -50,7 +50,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // PDF (itinerary, invoice, laporan) dibuat server-side lewat Browsershot; frontend membukanya dengan token.
     Route::prefix('export')->group(function () {
+        // Itinerary order boleh dibuka semua peran; invoice dan laporan keuangan hanya Admin dan Super Admin.
         Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
+    });
+
+    Route::prefix('export')->middleware('role:Admin,Super Admin')->group(function () {
         Route::get('/invoice/pdf', [ExportController::class, 'invoice_pdf']);
         Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
         Route::get('/account-receivable/pdf', [ExportController::class, 'account_receivable_pdf']);
@@ -116,9 +120,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::post('/orders/{order}/send-wa-supplier', [WhatsAppController::class, 'sendSupplierConfirmation']);
 
+    // Operator boleh menugaskan mobil/supplier/driver: PATCH order dibuka untuk semua peran, tetapi OrderController::update
+    // hanya menerima bagian `assignments` dari Operator.
+    Route::patch('/orders/{order}', [OrderController::class, 'update']);
+
     Route::middleware('role:Admin,Super Admin')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
-        Route::patch('/orders/{order}', [OrderController::class, 'update']);
 				Route::patch('/orders/lines/{order}', [OrderController::class, 'updateLines']);
         Route::patch('/orders/{order}/operational', [OrderOperationalController::class, 'update']);
         Route::post('/orders/{order}/selesai', [OrderController::class, 'markSelesai']);
@@ -126,21 +133,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{order}/reject-cancellation', [OrderController::class, 'rejectCancellation']);
     });
 
-    // Invoices — Harga Jual diisi manual, lalu ditandai Sudah Ditagihkan; pembayaran client dicatat di /payments.
-    Route::get('/invoices', [InvoiceController::class, 'index']);
-    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
-    Route::patch('/invoices/{invoice}/lines', [InvoiceController::class, 'updateLines']);
-    Route::post('/invoices/{invoice}/mark-billed', [InvoiceController::class, 'markBilled']);
-    Route::post('/invoices/{invoice}/unmark-billed', [InvoiceController::class, 'unmarkBilled']);
-    Route::post('/invoices/{invoice}/excel-downloaded', [InvoiceController::class, 'excelDownloaded']);
-    Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment']);
+    // Invoice, tagihan supplier, dan kirim WhatsApp bebas: hanya Admin dan Super Admin (Operator tidak melihat angka harga).
+    Route::middleware('role:Admin,Super Admin')->group(function () {
+        // Invoices — Harga Jual diisi manual, lalu ditandai Sudah Ditagihkan; pembayaran client dicatat di /payments.
+        Route::get('/invoices', [InvoiceController::class, 'index']);
+        Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+        Route::patch('/invoices/{invoice}/lines', [InvoiceController::class, 'updateLines']);
+        Route::post('/invoices/{invoice}/mark-billed', [InvoiceController::class, 'markBilled']);
+        Route::post('/invoices/{invoice}/unmark-billed', [InvoiceController::class, 'unmarkBilled']);
+        Route::post('/invoices/{invoice}/excel-downloaded', [InvoiceController::class, 'excelDownloaded']);
+        Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment']);
 
-    // Tagihan yang Perlu Dibayarkan (Payables) — always derived, never authored.
-    Route::get('/payables', [PayableController::class, 'index']);
-    Route::get('/payables/{id}', [PayableController::class, 'show'])->where('id', '.*');
-    Route::post('/payables/{id}/mark-paid', [PayableController::class, 'markPaid'])->where('id', '.*');
-    Route::post('/payables/mark-paid-bulk', [PayableController::class, 'markPaidBulk']);
+        // Tagihan yang Perlu Dibayarkan (Payables) — always derived, never authored.
+        Route::get('/payables', [PayableController::class, 'index']);
+        Route::get('/payables/{id}', [PayableController::class, 'show'])->where('id', '.*');
+        Route::post('/payables/{id}/mark-paid', [PayableController::class, 'markPaid'])->where('id', '.*');
+        Route::post('/payables/mark-paid-bulk', [PayableController::class, 'markPaidBulk']);
 
-    // Kirim pesan WhatsApp lewat antrean (SendWhatsAppMessageJob) dan catat di tabel whatsapp_messages.
-    Route::post('/whatsapp/send', [WhatsAppController::class, 'send']);
+        // Kirim pesan WhatsApp lewat antrean (SendWhatsAppMessageJob) dan catat di tabel whatsapp_messages.
+        Route::post('/whatsapp/send', [WhatsAppController::class, 'send']);
+    });
 });
