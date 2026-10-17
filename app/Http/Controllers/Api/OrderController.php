@@ -170,7 +170,7 @@ class OrderController extends Controller
             'kodeGroup' => [$required, 'string'],
             'tanggalMulai' => ['nullable', 'date'],
             'jamMulai' => ['nullable', 'string'],
-            'durasiHari' => ['nullable', 'integer', 'min:1'],
+            'durasiHari' => ['nullable', 'integer', 'min:0'],
             'destinasi' => ['nullable', 'string'],
             'bahasaId' => ['nullable', 'string'],
             'kota' => ['nullable', 'string'],

@@ -78,4 +78,49 @@ class TourTotalsTest extends TestCase
 
         $this->assertSame(['created', 'confirmed', 'updated', 'assigned', 'updated'], $kinds());
     }
+
+    public function test_saving_an_order_without_changing_anything_is_not_an_edit(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $other = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
+        $client = Client::create(['kode' => 'CLI-61', 'nama' => 'Tanpa Ubah']);
+        $payload = [
+            'tipe' => 'tour', 'clientId' => $client->id, 'namaOrder' => 'Sama', 'kodeGroup' => 'G-SAMA', 'tanggalMulai' => '2026-12-03',
+            'tamu' => [['nama' => 'A', 'kategori' => 'Dewasa']],
+            'itinerary' => [['hari' => 1, 'catatan' => 'x', 'aktivitas' => [['aktivitas' => 'Tur', 'biaya' => 100000, 'supplierTur' => 'V']]]],
+        ];
+
+        $id = $this->actingAs($admin, 'sanctum')->postJson('/api/orders', $payload)->assertCreated()->json('id');
+        $before = $this->getJson("/api/orders/{$id}")->json();
+
+        // Same data sent again by someone else: nothing is logged and nobody becomes "diperbarui oleh".
+        // (the form also sends 0 / [] for fields stored as empty: still not a change)
+        $this->actingAs($other, 'sanctum')->patchJson("/api/orders/{$id}", $payload + ['kotaTermasuk' => [], 'bahasaId' => ''])->assertOk();
+        $after = $this->getJson("/api/orders/{$id}")->json();
+
+        $this->assertSame(collect($before['events'])->pluck('kind')->all(), collect($after['events'])->pluck('kind')->all());
+        $this->assertSame($before['updated_by'], $after['updated_by']);
+        $this->assertSame($before['total'], $after['total']);
+
+        // A real change is an edit.
+        $this->actingAs($other, 'sanctum')->patchJson("/api/orders/{$id}", [...$payload, 'catatan' => 'baru'])->assertOk();
+        $changed = $this->getJson("/api/orders/{$id}")->json();
+        $this->assertSame('updated', collect($changed['events'])->last()['kind']);
+        $this->assertSame($other->id, $changed['updated_by']);
+    }
+
+    public function test_a_layanan_order_can_be_saved_again_after_an_edit_through_the_form(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin->value]), 'sanctum');
+        $client = Client::create(['kode' => 'CLI-62', 'nama' => 'Simpan Lagi']);
+        $payload = ['tipe' => 'layanan', 'subTipe' => 'check_in', 'clientId' => $client->id, 'namaOrder' => 'L', 'kodeGroup' => 'G-L', 'tanggalMulai' => '2026-12-04',
+            'layananDetail' => ['namaTamu' => 'T', 'hotelDropOff' => 'H', 'jumlahPax' => 1]];
+        $id = $this->postJson('/api/orders', $payload)->assertCreated()->json('id');
+
+        // The form sends an empty itinerary and a zero duration for Layanan; that must neither store 0 nor be refused.
+        $edit = [...$payload, 'itinerary' => [], 'durasiHari' => 0, 'catatan' => 'diubah'];
+        $this->patchJson("/api/orders/{$id}", $edit)->assertOk();
+        $this->assertNull($this->getJson("/api/orders/{$id}")->json('durasi_hari'));
+        $this->patchJson("/api/orders/{$id}", [...$edit, 'catatan' => 'diubah lagi'])->assertOk();
+    }
 }

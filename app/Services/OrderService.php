@@ -117,15 +117,23 @@ class OrderService
     {
         return DB::transaction(function () use ($order, $data, $actor) {
             $assignedBefore = $this->assignmentSignature($order);
+            $before = $this->snapshot($order);
 
             // tipe and subTipe are locked once the Order exists.
-            $order->update([...Arr::except($this->columns($data), 'sub_tipe'), 'updated_by' => $actor->id]);
+            $order->update(Arr::except($this->columns($data), 'sub_tipe'));
 
             $this->saveChildren($order, $data);
             $this->refreshDerivedFields($order);
 
             $supplierNames = $this->assignedSupplierNames($order);
             $invoice = $this->syncInvoice($order, $actor, $supplierNames);
+
+            // Pressing Ubah and saving without changing anything is not an edit: no Riwayat entry, no "diperbarui oleh".
+            if ($this->snapshot($order) === $before) {
+                return $order;
+            }
+
+            $order->update(['updated_by' => $actor->id]);
 
             // Giving a Supplier/Driver (or changing who it is) is worth its own Riwayat entry, on the Order and on its Invoice.
             // Picking only a vehicle, or changing a cost, is an ordinary edit: "Supplier/Driver ditugaskan" would be untrue.
@@ -141,6 +149,32 @@ class OrderService
         });
     }
 
+    /**
+     * What an Order holds right now — its own columns plus every child row — without ids and timestamps, so two
+     * snapshots are equal exactly when an edit changed nothing (rows that were deleted and re-created count as equal).
+     */
+    private function snapshot(Order $order): string
+    {
+        $order = $order->fresh(['guests', 'assignments', 'itineraryDays.activities', 'addOns', 'ticketRows', 'layananDetail']);
+        $noise = ['id', 'order_id', 'order_itinerary_day_id', 'created_at', 'updated_at'];
+        $rows = fn ($models) => $models->map(fn ($m) => Arr::except($m->getAttributes(), $noise))->values()->all();
+
+        // The form sends 0 / [] for fields the database holds as NULL; those are the same "empty".
+        $own = Arr::except($order->getAttributes(), ['id', 'created_at', 'updated_at', 'updated_by']);
+        $own['durasi_hari'] = $own['durasi_hari'] ?: null;
+        $own['kota_termasuk'] = in_array($own['kota_termasuk'], ['', '[]'], true) ? null : $own['kota_termasuk'];
+
+        return json_encode([
+            'order' => $own,
+            'guests' => $rows($order->guests),
+            'assignments' => $rows($order->assignments),
+            'days' => $order->itineraryDays->map(fn ($day) => [...Arr::except($day->getAttributes(), $noise), 'activities' => $rows($day->activities)])->values()->all(),
+            'addOns' => $rows($order->addOns),
+            'ticketRows' => $rows($order->ticketRows),
+            'layanan' => $order->layananDetail ? Arr::except($order->layananDetail->getAttributes(), $noise) : null,
+        ]);
+    }
+
     /** Maps the plain API fields that were actually sent onto orders columns. */
     private function columns(array $data): array
     {
@@ -151,7 +185,13 @@ class OrderService
             }
         }
 
-        if (isset($data['itinerary']) && ! isset($columns['durasi_hari'])) {
+        // Durasi 0 dari form berarti "tidak ada", bukan nol hari.
+        if (array_key_exists('durasi_hari', $columns) && ! $columns['durasi_hari']) {
+            $columns['durasi_hari'] = null;
+        }
+
+        // Hanya Tour yang punya itinerary; itinerary kosong (Layanan/Ticket) tidak boleh menghasilkan durasi 0.
+        if (! empty($data['itinerary']) && ! isset($columns['durasi_hari'])) {
             $columns['durasi_hari'] = count($data['itinerary']);
         }
 
