@@ -21,7 +21,7 @@
 				<td>{{ $group['supplierNama'] }}</td>
 				<td>{{ $tipeLabel[$group['tipeTagihan']] ?? $group['tipeTagihan'] }}</td>
 				<td>{{ $group['tanggalOrder'] ? \Carbon\Carbon::parse($group['tanggalOrder'])->locale('id')->translatedFormat('d M Y') : '-' }}</td>
-				<td class="r">{{ $idr($group['modal']) }}</td>
+				<td class="r">{{ $group['modal'] }}</td>
 				<td>
 					@if ($group['cancelled'])
 						<span class="pill warn">Dibatalkan</span>

@@ -19,8 +19,8 @@
 				<td class="mono">{{ $invoice->nomor }}</td>
 				<td>{{ $invoice->order?->kode ?? '-' }}</td>
 				<td>{{ $invoice->client?->nama ?? '-' }}</td>
-				<td class="r">{{ $idr($invoice->total) }}</td>
-				<td class="r">{{ $idr($invoice->sisa) }}</td>
+				<td class="r">{{ $invoice->total }}</td>
+				<td class="r">{{ $invoice->sisa }}</td>
 				<td>
 					@if ($invoice->status->value === 'Sudah Ditagihkan' && $invoice->sisa === 0)
 						<span class="pill ok">Lunas</span>

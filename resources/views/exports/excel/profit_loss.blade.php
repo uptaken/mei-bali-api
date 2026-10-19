@@ -21,9 +21,9 @@
 		@foreach ($months as $month)
 			<tr>
 				<td>{{ $month['label'] }}</td>
-				<td class="r">{{ $idr($month['pendapatan']) }}</td>
-				<td class="r">{{ $idr($month['modal']) }}</td>
-				<td class="r">{{ $idr($month['laba']) }}</td>
+				<td class="r">{{ $month['pendapatan'] }}</td>
+				<td class="r">{{ $month['modal'] }}</td>
+				<td class="r">{{ $month['laba'] }}</td>
 				<td class="r">{{ $margin($month['laba'], $month['pendapatan']) }}</td>
 				<td>
 					<span class="pill {{ $month['laba'] > 0 ? 'ok' : ($month['laba'] < 0 ? 'bad' : 'info') }}">{{ $month['laba'] > 0 ? 'Untung' : ($month['laba'] < 0 ? 'Rugi' : 'Impas') }}</span>

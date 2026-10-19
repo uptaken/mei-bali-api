@@ -118,69 +118,55 @@ class ExportController extends Controller
 
 
 
-		/** Tagihan of one month (?month=YYYY-MM, default this month), the same rows and figures the Tagihan screen shows. */
+		/**
+		 * Excel invoice: semua baris yang cocok (tanpa paginasi). Filter: id/ids (invoice tertentu), status, client_id,
+		 * month (YYYY-MM), date_from/date_to (tanggal dibuat), q (nomor atau kode order).
+		 */
 		public function invoice_excel(Request $request)
 		{
 			$q = trim((string) $request->query('q', ''));
+			$ids = collect(explode(',', (string) $request->query('ids', $request->query('id', ''))))->filter()->map(fn ($id) => (int) $id);
 
-				$arr = Invoice::query()
-					->with(['order:id,kode,nama_order', 'client:id,nama', 'lines' => function ($query) {
-							$query->select('id', 'invoice_id', 'qty', 'modal', 'harga_jual', 'supplier_nama', 'deskripsi', 'skip_biaya');
-					}, 'events' => function ($query) {
-							$query->select('id', 'invoice_id', 'kind', 'actor_id', 'at', 'detail',);
-					},])
-					->withSum('lines as modal', 'modal')
-					->withSum('lines as harga_jual', 'harga_jual')
-					->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
-					->when($request->filled('client_id'), fn ($query) => $query->where('client_id', $request->query('client_id')))
-					->when($request->filled('month'), fn ($query) => $query->where('tanggal_dibuat', 'like', $request->query('month').'%'))
-					->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
-							->where('nomor', 'like', "%{$q}%")
-							->orWhereHas('order', fn ($o) => $o->where('kode', 'like', "%{$q}%"))))
-					->latest()
-					->paginate($request->integer('per_page', 20));
+			$invoices = Invoice::query()
+				->with(['order:id,kode,status', 'client:id,nama', 'lines:id,invoice_id,qty,modal'])
+				->when($ids->isNotEmpty(), fn ($query) => $query->whereIn('id', $ids))
+				->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
+				->when($request->filled('client_id'), fn ($query) => $query->where('client_id', $request->query('client_id')))
+				->when($request->filled('month'), fn ($query) => $query->where('tanggal_dibuat', 'like', $request->query('month').'%'))
+				->when($request->filled('date_from'), fn ($query) => $query->whereDate('tanggal_dibuat', '>=', $request->query('date_from')))
+				->when($request->filled('date_to'), fn ($query) => $query->whereDate('tanggal_dibuat', '<=', $request->query('date_to')))
+				->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
+					->where('nomor', 'like', "%{$q}%")
+					->orWhereHas('order', fn ($o) => $o->where('kode', 'like', "%{$q}%"))))
+				->latest('tanggal_dibuat')->latest('id')
+				->get();
 
-				return Excel::download(new AccountPayableExport('exports.excel.invoice', [
-						'arr' => $arr,
-				]), 'invoice.xlsx');
+			return Excel::download(new AccountPayableExport('exports.excel.invoice', ['arr' => $invoices], ['E', 'F', 'G', 'H', 'I']), 'invoice.xlsx');
 		}
 
-		/** Tagihan of one month (?month=YYYY-MM, default this month), the same rows and figures the Tagihan screen shows. */
+		/** Excel daftar order: semua baris yang cocok dengan filter yang sama dengan layar Order (tanpa paginasi). */
 		public function order_excel(Request $request)
 		{
 			$q = trim((string) $request->query('q', ''));
-				$arr = Order::query()
-					->with(['client', 'supplier', 'vehicle', 'assignments', 'events' => fn ($query) => $query->select('id', 'order_id', 'kind', 'actor_id', 'at', 'detail')->orderBy('id'), 'itineraryDays' => function ($query) {
-						$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir',)
-							->with([ 'activities', ])
-							->withSum('activities as totalBiaya', 'biaya');
-					}, 'addOns', 'ticketRows', 'guests', 'layananDetail', 'invoices' => function ($query) {
-						$query->select('id', 'order_id', 'total', 'sisa', 'status', 'catatan',)
-							->with([ 'lines' => function ($query) {
-								$query->select('id', 'invoice_id', 'qty', 'modal', 'harga_jual', 'supplier_nama', 'deskripsi', 'skip_biaya');
-							}, 'events' => function ($query) {
-									$query->select('id', 'invoice_id', 'kind', 'actor_id', 'at', 'detail',);
-							}, ]);
-					},])
-					->withSum('addOns as total_modal_addons', 'modal')
-					->withSum('ticketRows as total_modal_satuan_ticketrows', 'modal_satuan')
-					->withSum('ticketRows as total_qty_ticketrows', 'qty')
-					->when($request->filled('tipe'), fn ($query) => $query->where('tipe', $request->query('tipe')))
-					->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
-					->when($request->filled('supplier_id'), fn ($query) => $query->where('supplier_id', $request->query('supplier_id')))
-					->when($request->filled('date_from'), fn ($query) => $query->whereDate('tanggal_mulai', '>=', $request->query('date_from')))
-					->when($request->filled('date_to'), fn ($query) => $query->whereDate('tanggal_mulai', '<=', $request->query('date_to')))
-					->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
-							->where('kode', 'like', "%{$q}%")
-							->orWhere('kode_group', 'like', "%{$q}%")
-							->orWhere('nama_order', 'like', "%{$q}%")
-							->orWhere('destinasi', 'like', "%{$q}%")))
-					->latest()
-					->paginate($request->integer('per_page', 20));
 
-				return Excel::download(new AccountPayableExport('exports.excel.order', [
-						'arr' => $arr,
-				]), 'order.xlsx');
+			$orders = Order::query()
+				->with(['client:id,kode', 'createdBy:id,nama', 'guests:id,order_id,nama'])
+				->when($request->filled('tipe'), fn ($query) => $query->where('tipe', $request->query('tipe')))
+				->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
+				->when($request->filled('supplier_id'), fn ($query) => $query->where(fn ($w) => $w
+					->where('supplier_id', $request->query('supplier_id'))
+					->orWhereHas('assignments', fn ($a) => $a->where('supplier_id', $request->query('supplier_id')))))
+				->when($request->filled('date_from'), fn ($query) => $query->whereDate('tanggal_mulai', '>=', $request->query('date_from')))
+				->when($request->filled('date_to'), fn ($query) => $query->whereDate('tanggal_mulai', '<=', $request->query('date_to')))
+				->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
+					->where('kode', 'like', "%{$q}%")
+					->orWhere('kode_group', 'like', "%{$q}%")
+					->orWhere('nama_order', 'like', "%{$q}%")
+					->orWhere('destinasi', 'like', "%{$q}%")))
+				->latest()
+				->get();
+
+			return Excel::download(new AccountPayableExport('exports.excel.order', ['arr' => $orders], ['M']), 'order.xlsx');
 		}
 
 		/** Tagihan of one month (?month=YYYY-MM, default this month), the same rows and figures the Tagihan screen shows. */
@@ -197,7 +183,7 @@ class ExportController extends Controller
 						'summary' => $this->payables->summary($groups),
 						'periode' => $this->periodLabel($month),
 						'printedBy' => $request->user()->nama,
-				]), 'account-payable.xlsx');
+				], ['E']), 'account-payable.xlsx');
 		}
 
 		/** Invoices (?status=, default "Sudah Ditagihkan"; ?month=YYYY-MM optional) with what is still owed on them. */
@@ -217,7 +203,7 @@ class ExportController extends Controller
 						'piutang' => $invoices->where('status.value', 'Sudah Ditagihkan')->where('sisa', '>', 0)->sum('sisa'),
 						'periode' => $this->periodLabel($month),
 						'printedBy' => $request->user()->nama,
-				]), 'account-receivable.xlsx');
+				], ['D', 'E']), 'account-receivable.xlsx');
 		}
 
 		/** Revenue minus Modal per month, from the invoices created that month (?from= & ?to= as YYYY-MM, default the last 4 months). */
@@ -246,7 +232,7 @@ class ExportController extends Controller
 						'months' => $months,
 						'periode' => $from->locale('id')->translatedFormat('M Y').' s/d '.$to->locale('id')->translatedFormat('M Y'),
 						'printedBy' => $request->user()->nama,
-				]), 'profit-loss.xlsx');
+				], ['B', 'C', 'D']), 'profit-loss.xlsx');
 		}
 
     /** Label periode untuk judul laporan, mis. "Oktober 2026"; tanpa bulan menjadi "Semua periode". */

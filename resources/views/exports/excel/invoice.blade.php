@@ -1,8 +1,3 @@
-@php
-	$idr = fn ($n) => 'Rp '.number_format($n, 0, ',', '.');
-	$tipeLabel = ['transportasi' => 'Transportasi', 'tour' => 'Tour', 'ticket' => 'Tiket', 'addon' => 'Add-On', 'layanan' => 'Layanan'];
-@endphp
-
 <table>
 	<thead>
 		<tr>
@@ -10,36 +5,36 @@
 			<th>Tanggal Dibuat</th>
 			<th>Kode Order</th>
 			<th>Client</th>
-			<th class="r">Total Invoice (Rp.)</th>
-			<th class="r">Total Modal (Rp.)</th>
-			<th class="r">Margin (Rp.)</th>
-			<th class="r">Sudah Dibayar (Rp.)</th>
-			<th class="r">Sisa (Rp.)</th>
-			<th class="r">Status</th>
+			<th>Total Invoice (Rp.)</th>
+			<th>Total Modal (Rp.)</th>
+			<th>Margin (Rp.)</th>
+			<th>Sudah Dibayar (Rp.)</th>
+			<th>Sisa (Rp.)</th>
+			<th>Status Tagihan</th>
+			<th>Status Order</th>
 		</tr>
 	</thead>
 	<tbody>
 		@forelse ($arr as $temp)
+			@php
+				$modal = $temp->lines->sum(fn ($l) => $l->qty * $l->modal);
+				$billed = $temp->status->value === 'Sudah Ditagihkan';
+			@endphp
 			<tr>
-				<td class="mono">{{ $temp->nomor }}</td>
-				<td>{{ $temp->tanggal_dibuat->isoFormat('DD/MM/YYYY') }}</td>
-				<td>{{ $temp->order->kode }}</td>
-				<td>{{ $temp->client->nama }}</td>
-				<td>{{ $idr($temp->total) }}</td>
-				<td>{{ $idr($temp->modal) }}</td>
-				<td>{{ $idr($temp->total - $temp->modal) }}</td>
-				<td>{{ $idr($temp->total - $temp->sisa) }}</td>
-				<td>{{ $idr($temp->sisa) }}</td>
-				<td>
-					@if ($temp->order->status === 'Dibatalkan')
-						<span class="pill warn">Dibatalkan</span>
-					@else
-						<span class="pill {{ $temp->order->status === 'Bayar' ? 'ok' : 'bad' }}">{{ $temp->order->status }}</span>
-					@endif
-				</td>
+				<td>{{ $temp->nomor }}</td>
+				<td>{{ $temp->tanggal_dibuat?->format('d/m/Y') }}</td>
+				<td>{{ $temp->order?->kode }}</td>
+				<td>{{ $temp->client?->nama }}</td>
+				<td>{{ $temp->total }}</td>
+				<td>{{ $modal }}</td>
+				<td>{{ $temp->total - $modal }}</td>
+				<td>{{ $temp->total - $temp->sisa }}</td>
+				<td>{{ $temp->sisa }}</td>
+				<td>{{ $billed && $temp->sisa === 0 ? 'Lunas' : $temp->status->value }}</td>
+				<td>{{ $temp->order?->status->value }}</td>
 			</tr>
 		@empty
-			<tr><td colspan="6" class="note">Tidak ada tagihan pada periode ini.</td></tr>
+			<tr><td colspan="11">Tidak ada invoice yang sesuai filter.</td></tr>
 		@endforelse
 	</tbody>
 </table>
