@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
 
 /**
@@ -259,6 +260,11 @@ class OrderController extends Controller
     {
         $data = $request->validate($this->orderRules(isCreate: true));
 
+        // Order tiket tanpa satu pun tiket tidak ada artinya (tidak ada modal, tagihan, atau tamu yang dilayani).
+        if ($data['tipe'] === 'ticket' && empty($data['ticketRows'])) {
+            throw ValidationException::withMessages(['ticketRows' => ['Order tiket harus berisi minimal satu tiket.']]);
+        }
+
         $order = $this->orderService->create($data, $request->user());
 
         return response()->json($this->visibleTo($order->load(self::WITH), $request), 201);
@@ -268,6 +274,9 @@ class OrderController extends Controller
     public function update(Request $request, Order $order): Order
     {
         $data = $request->validate($this->orderRules(isCreate: false));
+
+        // Order yang sudah selesai atau dibatalkan tidak diubah lagi (layar Ubah/Tugaskan juga disembunyikan untuknya).
+        abort_if(in_array($order->status, [OrderStatus::Selesai, OrderStatus::Dibatalkan], true), 422, 'Order yang sudah '.mb_strtolower($order->status->value).' tidak dapat diubah.');
 
         // Operator hanya menugaskan mobil/supplier/driver: bagian lain dari order yang ikut terkirim diabaikan.
         if (! $request->user()->role->canCreateOrder()) {

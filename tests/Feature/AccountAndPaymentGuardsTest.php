@@ -56,4 +56,29 @@ class AccountAndPaymentGuardsTest extends TestCase
         ])->assertCreated();
         $this->assertDatabaseHas('users', ['email' => 'baru@example.com']);
     }
+
+    public function test_closed_orders_and_billed_invoices_cannot_be_edited_and_empty_ticket_orders_are_refused(): void
+    {
+        $super = User::factory()->create(['role' => 'Super Admin']);
+        $client = Client::create(['kode' => 'CLI-82', 'nama' => 'Tutup']);
+        $payload = ['tipe' => 'ticket', 'clientId' => $client->id, 'namaOrder' => 'T', 'kodeGroup' => 'G-T', 'tanggalPemakaian' => '2026-12-06', 'ticketRows' => [['namaTiket' => 'Zoo', 'qty' => 1, 'modalSatuan' => 100000]]];
+
+        $this->actingAs($super, 'sanctum')->postJson('/api/orders', [...$payload, 'ticketRows' => []])->assertStatus(422);
+
+        $id = $this->actingAs($super, 'sanctum')->postJson('/api/orders', $payload)->assertCreated()->json('id');
+        $invoice = Invoice::where('order_id', $id)->firstOrFail();
+        $line = $invoice->lines()->first();
+        $this->patchJson("/api/invoices/{$invoice->id}/lines", ['lines' => [['id' => $line->id, 'qty' => 1, 'hargaJual' => 150000]]])->assertOk();
+        $this->postJson("/api/invoices/{$invoice->id}/mark-billed")->assertOk();
+
+        $this->patchJson("/api/invoices/{$invoice->id}/lines", ['lines' => [['id' => $line->id, 'qty' => 1, 'hargaJual' => 1]]])->assertStatus(422);
+        $this->assertSame(150000, $invoice->fresh()->total);
+
+        $this->postJson("/api/invoices/{$invoice->id}/payments", ['amount' => 1000])->assertOk();
+        $this->postJson("/api/invoices/{$invoice->id}/unmark-billed")->assertStatus(422);
+
+        $this->postJson("/api/orders/{$id}/cancel", ['alasan' => 'batal'])->assertOk();
+        $this->patchJson("/api/orders/{$id}", [...$payload, 'namaOrder' => 'Diubah setelah batal'])->assertStatus(422);
+        $this->assertSame('T', \App\Models\Order::find($id)->nama_order);
+    }
 }

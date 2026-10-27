@@ -53,6 +53,8 @@ class InvoiceController extends Controller
      */
     public function updateLines(Request $request, Invoice $invoice): Invoice
     {
+        abort_if($invoice->status === InvoiceStatus::SudahDitagihkan, 422, 'Invoice yang sudah ditagihkan tidak dapat diubah. Batalkan penandaan ditagihkan dulu.');
+
         $data = $request->validate([
             'lines' => ['required', 'array'],
             'lines.*.id' => ['nullable', 'integer', 'exists:invoice_lines,id'],
@@ -124,6 +126,8 @@ class InvoiceController extends Controller
     /** POST /api/invoices/{invoice}/unmark-billed — batalkan penandaan ditagihkan (kembali Belum Ditagihkan). */
     public function unmarkBilled(Request $request, Invoice $invoice): Invoice
     {
+        abort_if($invoice->sisa < $invoice->total, 422, 'Invoice yang sudah menerima pembayaran tidak dapat dibatalkan penandaannya.');
+
         $invoice->update(['status' => InvoiceStatus::BelumDitagihkan->value, 'tanggal_ditagihkan' => null]);
         $invoice->events()->create(['kind' => 'unbilled', 'actor_id' => $request->user()->id, 'at' => now()]);
 
