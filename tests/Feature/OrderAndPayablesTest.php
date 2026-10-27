@@ -16,7 +16,7 @@ class OrderAndPayablesTest extends TestCase
 
     public function test_admin_can_create_a_tour_order_with_two_vehicles_on_one_day_and_it_produces_two_separate_tagihan(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $client = Client::create(['kode' => 'CLI-01', 'nama' => 'Test Client']);
         $supplierA = Supplier::create(['kode' => 'SUP-01', 'nama' => 'Wayan', 'telepon' => '081200000001']);
         $supplierB = Supplier::create(['kode' => 'SUP-02', 'nama' => 'Hendra', 'telepon' => '081200000002']);
@@ -88,7 +88,7 @@ class OrderAndPayablesTest extends TestCase
 
     public function test_creating_a_tour_keeps_every_invoice_line(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $client = Client::create(['kode' => 'CLI-03', 'nama' => 'Tour Client']);
 
         $response = $this->actingAs($admin, 'sanctum')->postJson('/api/orders', [
@@ -202,7 +202,7 @@ class OrderAndPayablesTest extends TestCase
 
     public function test_invoice_pricing_billing_payment_and_excel_log_each_have_their_own_endpoint(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $client = Client::create(['kode' => 'CLI-07', 'nama' => 'Invoice Client']);
 
         $order = $this->actingAs($admin, 'sanctum')->postJson('/api/orders', [

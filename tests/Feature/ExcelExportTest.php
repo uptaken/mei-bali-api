@@ -23,7 +23,7 @@ class ExcelExportTest extends TestCase
 
     public function test_excel_exports_every_row_with_filters_and_real_numbers(): void
     {
-        $admin = User::factory()->create(['role' => 'Admin']);
+        $admin = User::factory()->create(['role' => 'Super Admin']);
         $client = Client::create(['kode' => 'CLI-91', 'nama' => 'Excel']);
         foreach (range(1, 25) as $i) {
             $this->actingAs($admin, 'sanctum')->postJson('/api/orders', [

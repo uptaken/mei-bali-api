@@ -146,9 +146,9 @@ class OrderController extends Controller
 				}
 
 
-				// Operator tidak boleh melihat Harga Jual dan margin yang ada di invoice.
-				if (!$request->user()->role->canSeePricing())
-					$arrOrder->getCollection()->each->unsetRelation('invoices');
+				// Harga Jual dan margin ada di invoice: hanya Super Admin.
+				if (!$request->user()->role->canSeeHargaJual())
+					$arrOrder->getCollection()->each(fn ($order) => $this->hideHargaJual($order));
 
 				return $arrOrder;
     }
@@ -159,14 +159,22 @@ class OrderController extends Controller
         return $this->visibleTo($order->load(self::WITH), $request);
     }
 
-    /** Order apa adanya untuk Admin/Super Admin; tanpa invoice (Harga Jual, margin) untuk Operator. */
+    /** Order apa adanya untuk Super Admin; tanpa invoice dan Harga Jual referensi tiket untuk Admin dan Operator. */
     private function visibleTo(Order $order, Request $request): Order
     {
-        if (! $request->user()->role->canSeePricing()) {
-            $order->unsetRelation('invoices');
+        if (! $request->user()->role->canSeeHargaJual()) {
+            $this->hideHargaJual($order);
         }
 
         return $order;
+    }
+
+    private function hideHargaJual(Order $order): void
+    {
+        $order->unsetRelation('invoices');
+        if ($order->relationLoaded('ticketRows')) {
+            $order->ticketRows->each->makeHidden('harga_jual_ref');
+        }
     }
 
     /**
@@ -253,7 +261,7 @@ class OrderController extends Controller
 
         $order = $this->orderService->create($data, $request->user());
 
-        return response()->json($order->load(self::WITH), 201);
+        return response()->json($this->visibleTo($order->load(self::WITH), $request), 201);
     }
 
     /** PATCH /api/orders/{order} — menu Ubah: seluruh isi order disinkronkan lewat OrderService. Tipe dan subTipe tidak bisa diganti, sama seperti di frontend. */

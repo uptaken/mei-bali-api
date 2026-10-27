@@ -16,7 +16,7 @@ class StaleRowsTest extends TestCase
 
     public function test_a_new_order_reusing_a_deleted_orders_id_starts_with_a_clean_riwayat(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $this->actingAs($admin, 'sanctum');
         $client = Client::create(['kode' => 'CLI-07', 'nama' => 'C']);
         $payload = ['tipe' => 'ticket', 'clientId' => $client->id, 'namaOrder' => 'X', 'kodeGroup' => 'G', 'tanggalPemakaian' => '2026-11-10',

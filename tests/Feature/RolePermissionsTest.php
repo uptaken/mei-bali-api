@@ -15,9 +15,10 @@ class RolePermissionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_operator_cannot_reach_pricing_money_or_reports_but_admin_can(): void
+    public function test_only_super_admin_reaches_harga_jual_and_admin_keeps_supplier_payables(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $super = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $operator = User::factory()->create(['role' => UserRole::Operator->value]);
 
         $client = Client::create(['kode' => 'CLI-71', 'nama' => 'Uang']);
@@ -35,13 +36,51 @@ class RolePermissionsTest extends TestCase
         $this->actingAs($operator, 'sanctum')->postJson('/api/payables/mark-paid-bulk', ['ids' => []])->assertForbidden();
         $this->actingAs($operator, 'sanctum')->postJson('/api/whatsapp/send', ['phone' => '0812', 'message' => 'x'])->assertForbidden();
 
-        $this->actingAs($admin, 'sanctum')->getJson('/api/invoices')->assertOk();
+        // Admin: tagihan supplier (modal) boleh, tetapi apa pun yang memuat Harga Jual tidak.
         $this->actingAs($admin, 'sanctum')->getJson('/api/payables')->assertOk();
+        $this->actingAs($admin, 'sanctum')->getJson('/api/export/account-payable/pdf?month=2026-12')->assertStatus(200);
+        foreach (['/api/invoices', "/api/invoices/{$invoice}", '/api/export/invoice/excel', '/api/export/account-receivable/excel', '/api/export/profit-loss/excel', '/api/export/invoice/pdf?id=1'] as $path) {
+            $this->actingAs($admin, 'sanctum')->getJson($path)->assertForbidden();
+        }
+        $this->actingAs($admin, 'sanctum')->patchJson("/api/invoices/{$invoice}/lines", ['lines' => []])->assertForbidden();
+        $this->actingAs($admin, 'sanctum')->postJson("/api/invoices/{$invoice}/payments", ['amount' => 1])->assertForbidden();
+
+        $this->actingAs($super, 'sanctum')->getJson('/api/invoices')->assertOk();
+        $this->actingAs($super, 'sanctum')->getJson('/api/payables')->assertOk();
+    }
+
+    public function test_harga_jual_is_hidden_from_admin_in_orders_products_and_tickets(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $super = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
+        $client = Client::create(['kode' => 'CLI-72', 'nama' => 'Harga']);
+
+        $id = $this->actingAs($admin, 'sanctum')->postJson('/api/orders', [
+            'tipe' => 'ticket', 'clientId' => $client->id, 'namaOrder' => 'Harga', 'kodeGroup' => 'G-H', 'tanggalPemakaian' => '2026-12-06',
+            'ticketRows' => [['namaTiket' => 'Zoo', 'qty' => 1, 'modalSatuan' => 100000, 'hargaJualRef' => 250000]],
+        ])->assertCreated()->assertJsonMissingPath('invoices')->json('id');
+
+        $this->actingAs($admin, 'sanctum')->getJson("/api/orders/{$id}")->assertOk()->assertJsonMissingPath('invoices')->assertJsonMissingPath('ticket_rows.0.harga_jual_ref');
+        $row = collect($this->actingAs($admin, 'sanctum')->getJson('/api/orders')->json('data'))->firstWhere('id', $id);
+        $this->assertArrayNotHasKey('invoices', $row);
+        $this->assertArrayNotHasKey('harga_jual_ref', $row['ticket_rows'][0]);
+
+        $this->actingAs($super, 'sanctum')->getJson("/api/orders/{$id}")->assertOk()->assertJsonPath('ticket_rows.0.harga_jual_ref', 250000);
+        $this->assertNotEmpty($this->actingAs($super, 'sanctum')->getJson("/api/orders/{$id}")->json('invoices'));
+
+        // Produk: Admin tidak menerima maupun bisa menulis harga_jual; Super Admin bisa.
+        $pid = $this->actingAs($super, 'sanctum')->postJson('/api/products', ['nama' => 'Rafting', 'harga_jual' => 900000, 'modal' => 500000])->assertCreated()->json('id');
+        $this->actingAs($admin, 'sanctum')->getJson('/api/products')->assertOk()->assertJsonMissingPath('0.harga_jual');
+        $this->actingAs($admin, 'sanctum')->patchJson("/api/products/{$pid}", ['harga_jual' => 1, 'modal' => 600000])->assertOk()->assertJsonMissingPath('harga_jual');
+        $this->assertSame(900000, (int) \App\Models\Product::find($pid)->harga_jual);
+        $this->assertSame(600000, (int) \App\Models\Product::find($pid)->modal);
+        $this->actingAs($super, 'sanctum')->getJson("/api/products/{$pid}")->assertJsonPath('harga_jual', 900000);
     }
 
     public function test_operator_can_assign_a_driver_but_nothing_else_and_never_sees_invoices(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $super = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $operator = User::factory()->create(['role' => UserRole::Operator->value]);
         $client = Client::create(['kode' => 'CLI-70', 'nama' => 'Peran']);
         $supplier = Supplier::create(['kode' => 'SUP-70', 'nama' => 'Wayan', 'telepon' => '0812']);
@@ -58,7 +97,7 @@ class RolePermissionsTest extends TestCase
             'assignments' => [['hari' => 1, 'vehicleId' => $vehicle->id, 'supplierId' => $supplier->id, 'biayaTransportModal' => 0]],
         ])->assertOk()->assertJsonMissingPath('invoices');
 
-        $order = $this->actingAs($admin, 'sanctum')->getJson("/api/orders/{$id}")->json();
+        $order = $this->actingAs($super, 'sanctum')->getJson("/api/orders/{$id}")->json();
         $this->assertSame('asli', $order['catatan']);
         $this->assertSame('Peran', $order['nama_order']);
         $this->assertSame('Siap Kirim WA', $order['status']);

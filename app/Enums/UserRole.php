@@ -23,6 +23,12 @@ enum UserRole: string
         return $this !== self::Operator;
     }
 
+    /** Harga Jual dan semua angka turunannya (invoice, margin, piutang, laba rugi): hanya Super Admin. */
+    public function canSeeHargaJual(): bool
+    {
+        return $this === self::SuperAdmin;
+    }
+
     public function canApproveCancellation(): bool
     {
         return $this === self::SuperAdmin;

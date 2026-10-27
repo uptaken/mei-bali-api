@@ -15,7 +15,7 @@ class AccountAndPaymentGuardsTest extends TestCase
 
     public function test_payment_cannot_exceed_remaining_balance_and_billing_is_idempotent(): void
     {
-        $admin = User::factory()->create(['role' => 'Admin']);
+        $admin = User::factory()->create(['role' => 'Super Admin']);
         $client = Client::create(['kode' => 'CLI-81', 'nama' => 'Bayar']);
         $this->actingAs($admin, 'sanctum')->postJson('/api/orders', [
             'tipe' => 'ticket', 'clientId' => $client->id, 'namaOrder' => 'Bayar', 'kodeGroup' => 'G-B', 'tanggalPemakaian' => '2026-12-06',

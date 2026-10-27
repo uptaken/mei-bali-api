@@ -17,7 +17,7 @@ class TourTotalsTest extends TestCase
 
     public function test_a_tour_total_is_the_same_everywhere_it_is_shown(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::Admin->value]);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin->value]);
         $this->actingAs($admin, 'sanctum');
         $client = Client::create(['kode' => 'CLI-09', 'nama' => 'Tour Client']);
         $supplier = Supplier::create(['kode' => 'SUP-09', 'nama' => 'Wayan', 'telepon' => '081200000009']);

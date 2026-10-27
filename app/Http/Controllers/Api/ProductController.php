@@ -12,9 +12,19 @@ class ProductController extends Controller
 {
     use RefusesDeleteWhenUsed;
 
-    public function index()
+    public function index(Request $request)
     {
-        return Product::with('category')->orderBy('nama')->get();
+        return $this->withoutHargaJual(Product::with('category')->orderBy('nama')->get(), $request);
+    }
+
+    /** Harga Jual hanya dikirim ke Super Admin. */
+    private function withoutHargaJual($products, Request $request)
+    {
+        if (! $request->user()->role->canSeeHargaJual()) {
+            collect($products instanceof Product ? [$products] : $products)->each->makeHidden('harga_jual');
+        }
+
+        return $products;
     }
 
     public function store(Request $request)
@@ -22,17 +32,20 @@ class ProductController extends Controller
         $data = $request->validate([
             'product_category_id' => ['nullable', 'exists:product_categories,id'],
             'nama' => ['required', 'string', 'max:255'],
-            'harga_jual' => ['required', 'integer', 'min:0'],
+            'harga_jual' => ['sometimes', 'integer', 'min:0'],
             'modal' => ['required', 'integer', 'min:0'],
             'deskripsi' => ['nullable', 'string'],
         ]);
+        if (! $request->user()->role->canSeeHargaJual()) {
+            unset($data['harga_jual']);
+        }
 
-        return response()->json(Product::create($data), 201);
+        return response()->json($this->withoutHargaJual(Product::create($data)->refresh(), $request), 201);
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
-        return $product->load('category');
+        return $this->withoutHargaJual($product->load('category'), $request);
     }
 
     public function update(Request $request, Product $product)
@@ -45,9 +58,12 @@ class ProductController extends Controller
             'deskripsi' => ['nullable', 'string'],
         ]);
 
+        if (! $request->user()->role->canSeeHargaJual()) {
+            unset($data['harga_jual']);
+        }
         $product->update($data);
 
-        return $product;
+        return $this->withoutHargaJual($product, $request);
     }
 
     public function destroy(Product $product)

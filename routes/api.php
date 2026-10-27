@@ -54,17 +54,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/order/pdf', [ExportController::class, 'order_pdf']);
     });
 
-    Route::prefix('export')->middleware('role:Admin,Super Admin')->group(function () {
+    // Tagihan supplier (modal) dan daftar order boleh untuk Admin; invoice, piutang, dan laba rugi memuat Harga Jual: Super Admin saja.
+    Route::prefix('export')->middleware('role:Super Admin')->group(function () {
         Route::get('/invoice/pdf', [ExportController::class, 'invoice_pdf']);
-        Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
         Route::get('/account-receivable/pdf', [ExportController::class, 'account_receivable_pdf']);
         Route::get('/profit-loss/pdf', [ExportController::class, 'profit_loss_pdf']);
+        Route::get('/account-receivable/excel', [ExportController::class, 'account_receivable_excel']);
+        Route::get('/profit-loss/excel', [ExportController::class, 'profit_loss_excel']);
+        Route::get('/invoice/excel', [ExportController::class, 'invoice_excel']);
+    });
+
+    Route::prefix('export')->middleware('role:Admin,Super Admin')->group(function () {
+        Route::get('/account-payable/pdf', [ExportController::class, 'account_payable_pdf']);
 
 
 				Route::get('/account-payable/excel', [ExportController::class, 'account_payable_excel']);
-				Route::get('/account-receivable/excel', [ExportController::class, 'account_receivable_excel']);
-				Route::get('/profit-loss/excel', [ExportController::class, 'profit_loss_excel']);
-				Route::get('/invoice/excel', [ExportController::class, 'invoice_excel']);
 				Route::get('/order/excel', [ExportController::class, 'order_excel']);
     });
 
@@ -133,8 +137,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{order}/reject-cancellation', [OrderController::class, 'rejectCancellation']);
     });
 
-    // Invoice, tagihan supplier, dan kirim WhatsApp bebas: hanya Admin dan Super Admin (Operator tidak melihat angka harga).
-    Route::middleware('role:Admin,Super Admin')->group(function () {
+    // Invoice memuat Harga Jual: hanya Super Admin.
+    Route::middleware('role:Super Admin')->group(function () {
         // Invoices — Harga Jual diisi manual, lalu ditandai Sudah Ditagihkan; pembayaran client dicatat di /payments.
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
@@ -143,7 +147,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/invoices/{invoice}/unmark-billed', [InvoiceController::class, 'unmarkBilled']);
         Route::post('/invoices/{invoice}/excel-downloaded', [InvoiceController::class, 'excelDownloaded']);
         Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment']);
+    });
 
+    // Tagihan supplier (modal) dan kirim WhatsApp: Admin dan Super Admin (Operator tidak melihat angka).
+    Route::middleware('role:Admin,Super Admin')->group(function () {
         // Tagihan yang Perlu Dibayarkan (Payables) — always derived, never authored.
         Route::get('/payables', [PayableController::class, 'index']);
         Route::get('/payables/{id}', [PayableController::class, 'show'])->where('id', '.*');
