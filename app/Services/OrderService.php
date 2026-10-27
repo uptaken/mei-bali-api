@@ -14,6 +14,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -117,7 +118,7 @@ class OrderService
     {
         return DB::transaction(function () use ($order, $data, $actor) {
             $assignedBefore = $this->assignmentSignature($order);
-            $before = $this->snapshot($order);
+            $before = $this->snapshotData($order);
 
             // tipe and subTipe are locked once the Order exists.
             $order->update(Arr::except($this->columns($data), 'sub_tipe'));
@@ -129,7 +130,8 @@ class OrderService
             $invoice = $this->syncInvoice($order, $actor, $supplierNames);
 
             // Pressing Ubah and saving without changing anything is not an edit: no Riwayat entry, no "diperbarui oleh".
-            if ($this->snapshot($order) === $before) {
+            $after = $this->snapshotData($order);
+            if ($after == $before) {
                 return $order;
             }
 
@@ -141,8 +143,13 @@ class OrderService
                 $assigned = [['kind' => 'assigned', 'detail' => $supplierNames ?: null]];
                 $this->logEvents($order->events(), $actor, $assigned);
                 $this->logEvents($invoice->events(), $actor, $assigned);
+                // Bagian lain yang ikut berubah pada simpan yang sama tetap dicatat sebagai perubahan biasa.
+                $others = $this->describeChanges($before, $after, withAssignments: false);
+                if ($others !== '') {
+                    $this->logEvents($order->events(), $actor, [['kind' => 'updated', 'detail' => $others]]);
+                }
             } else {
-                $this->logEvents($order->events(), $actor, [['kind' => 'updated']]);
+                $this->logEvents($order->events(), $actor, [['kind' => 'updated', 'detail' => $this->describeChanges($before, $after) ?: null]]);
             }
 
             return $order;
@@ -153,7 +160,7 @@ class OrderService
      * What an Order holds right now — its own columns plus every child row — without ids and timestamps, so two
      * snapshots are equal exactly when an edit changed nothing (rows that were deleted and re-created count as equal).
      */
-    private function snapshot(Order $order): string
+    private function snapshotData(Order $order): array
     {
         $order = $order->fresh(['guests', 'assignments', 'itineraryDays.activities', 'addOns', 'ticketRows', 'layananDetail']);
         $noise = ['id', 'order_id', 'order_itinerary_day_id', 'created_at', 'updated_at'];
@@ -164,7 +171,7 @@ class OrderService
         $own['durasi_hari'] = $own['durasi_hari'] ?: null;
         $own['kota_termasuk'] = in_array($own['kota_termasuk'], ['', '[]'], true) ? null : $own['kota_termasuk'];
 
-        return json_encode([
+        return [
             'order' => $own,
             'guests' => $rows($order->guests),
             'assignments' => $rows($order->assignments),
@@ -172,7 +179,88 @@ class OrderService
             'addOns' => $rows($order->addOns),
             'ticketRows' => $rows($order->ticketRows),
             'layanan' => $order->layananDetail ? Arr::except($order->layananDetail->getAttributes(), $noise) : null,
-        ]);
+        ];
+    }
+
+    /** Kolom order yang dilaporkan di Riwayat, dengan nama yang dikenal pengguna. Kolom turunan/sistem (status, total) tidak dilaporkan. */
+    private const OWN_LABELS = [
+        'client_id' => 'Client', 'nama_order' => 'Nama Order', 'kode_group' => 'Kode Group', 'tanggal_mulai' => 'Tanggal Mulai',
+        'tanggal_pemakaian' => 'Tanggal Pemakaian', 'jam_mulai' => 'Jam Mulai', 'durasi_hari' => 'Durasi', 'destinasi' => 'Destinasi',
+        'bahasa_id' => 'Bahasa', 'kota' => 'Kota', 'kota_termasuk' => 'Kota Termasuk', 'paket_id' => 'Paket', 'dewasa' => 'Jumlah Dewasa',
+        'anak' => 'Jumlah Anak', 'catatan' => 'Catatan', 'catatan_penugasan' => 'Catatan Penugasan',
+    ];
+
+    /** Kolom pendek yang nilai lamanya layak ditampilkan ("Nama Order: A → B"); sisanya cukup nama kolomnya. */
+    private const SHOW_VALUES = ['nama_order', 'kode_group', 'tanggal_mulai', 'tanggal_pemakaian', 'jam_mulai', 'durasi_hari', 'destinasi', 'kota', 'dewasa', 'anak'];
+
+    /**
+     * Ringkasan perubahan untuk Riwayat, mis. "Nama Order: A → B, Tanggal Mulai: 2026-11-20 → 2026-11-25, Itinerary Hari 2".
+     * Angka uang (modal, biaya) hanya disebut namanya, tidak nilainya.
+     */
+    private function describeChanges(array $before, array $after, bool $withAssignments = true): string
+    {
+        $show = fn ($v) => $v === null || $v === '' ? '(kosong)' : (string) $v;
+        $labels = [];
+
+        foreach (self::OWN_LABELS as $column => $label) {
+            $old = $before['order'][$column] ?? null;
+            $new = $after['order'][$column] ?? null;
+            if (($old ?? '') == ($new ?? '')) {
+                continue;
+            }
+            $labels[] = in_array($column, self::SHOW_VALUES, true) ? "{$label}: {$show($old)} → {$show($new)}" : $label;
+        }
+
+        if ($before['guests'] != $after['guests']) {
+            $labels[] = 'Nama Tamu';
+        }
+
+        if ($withAssignments) {
+            $pick = fn (array $rows, array $keys) => array_map(fn ($r) => Arr::only($r, $keys), $rows);
+            if ($pick($before['assignments'], ['hari', 'vehicle_id', 'supplier_id']) != $pick($after['assignments'], ['hari', 'vehicle_id', 'supplier_id'])) {
+                $labels[] = 'Penugasan Mobil/Supplier/Driver';
+            }
+            if ($pick($before['assignments'], ['hari', 'biaya_transport_modal']) != $pick($after['assignments'], ['hari', 'biaya_transport_modal'])) {
+                $labels[] = 'Biaya Transport';
+            }
+        }
+
+        if (count($before['days']) !== count($after['days'])) {
+            $labels[] = 'Jumlah Hari Itinerary';
+        }
+        foreach ($after['days'] as $i => $day) {
+            $old = $before['days'][$i] ?? null;
+            if ($old === null) {
+                continue;
+            }
+            $hari = $day['hari'] ?? $i + 1;
+            $dayOnly = fn (array $d) => Arr::except($d, ['activities']);
+            if ($dayOnly($old) != $dayOnly($day)) {
+                $labels[] = "Itinerary Hari {$hari}";
+            }
+            $acts = fn (array $d, array $keys) => array_map(fn ($a) => Arr::only($a, $keys), $d['activities']);
+            if ($acts($old, ['aktivitas']) != $acts($day, ['aktivitas'])) {
+                $labels[] = "Aktivitas Hari {$hari}";
+            }
+            if ($acts($old, ['biaya', 'skip_biaya']) != $acts($day, ['biaya', 'skip_biaya'])) {
+                $labels[] = "Modal Tur Hari {$hari}";
+            }
+            if ($acts($old, ['supplier_tur']) != $acts($day, ['supplier_tur'])) {
+                $labels[] = "Supplier Tur Hari {$hari}";
+            }
+        }
+
+        if ($before['addOns'] != $after['addOns']) {
+            $labels[] = 'Add-Ons';
+        }
+        if ($before['ticketRows'] != $after['ticketRows']) {
+            $labels[] = 'Tiket';
+        }
+        if ($before['layanan'] != $after['layanan']) {
+            $labels[] = 'Detail Layanan';
+        }
+
+        return Str::limit(implode(', ', $labels), 250, '…');
     }
 
     /** Maps the plain API fields that were actually sent onto orders columns. */
