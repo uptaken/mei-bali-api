@@ -54,5 +54,9 @@ class ExcelExportTest extends TestCase
         foreach (['account-payable', 'account-receivable', 'profit-loss'] as $name) {
             $this->assertNotEmpty($this->rows($this->actingAs($admin, 'sanctum')->get("/api/export/{$name}/excel")), $name);
         }
+
+        $this->actingAs($admin, 'sanctum')->patchJson('/api/orders/'.\App\Models\Order::orderBy('id')->value('id'), ['catatan' => 'Tamu alergi kacang'])->assertOk();
+        $this->assertCount(2, $this->rows($this->actingAs($admin, 'sanctum')->get('/api/export/order/excel?q=alergi')));
+        $this->assertCount(1, $this->actingAs($admin, 'sanctum')->getJson('/api/orders?q=alergi')->json('data'));
     }
 }

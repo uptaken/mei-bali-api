@@ -29,7 +29,7 @@ class OrderController extends Controller
 
     /**
      * GET /api/orders — daftar order berpaginasi (?per_page=). Filter sama dengan OrderList.tsx:
-     * tipe, status, supplier_id, date_from/date_to (tanggal mulai) dan q (kode, kode grup, nama, destinasi).
+     * tipe, status, supplier_id, date_from/date_to (tanggal mulai) dan q (kode, kode grup, nama, destinasi, catatan, catatan penugasan, catatan itinerary).
      * Setiap baris juga diberi `items` (rincian modal yang menjadi dasar tagihan supplier), `totalItems`
      * dan `statusItems` (Bayar/Belum Bayar) supaya layar daftar tidak perlu menghitung ulang.
      */
@@ -59,7 +59,10 @@ class OrderController extends Controller
                 ->where('kode', 'like', "%{$q}%")
                 ->orWhere('kode_group', 'like', "%{$q}%")
                 ->orWhere('nama_order', 'like', "%{$q}%")
-                ->orWhere('destinasi', 'like', "%{$q}%")))
+                ->orWhere('destinasi', 'like', "%{$q}%")
+                ->orWhere('catatan', 'like', "%{$q}%")
+                ->orWhere('catatan_penugasan', 'like', "%{$q}%")
+                ->orWhereHas('itineraryDays', fn ($d) => $d->where('catatan', 'like', "%{$q}%"))))
             ->latest()
             ->paginate($request->integer('per_page', 20));
 

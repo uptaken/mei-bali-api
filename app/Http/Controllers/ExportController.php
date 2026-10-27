@@ -162,7 +162,10 @@ class ExportController extends Controller
 					->where('kode', 'like', "%{$q}%")
 					->orWhere('kode_group', 'like', "%{$q}%")
 					->orWhere('nama_order', 'like', "%{$q}%")
-					->orWhere('destinasi', 'like', "%{$q}%")))
+					->orWhere('destinasi', 'like', "%{$q}%")
+                ->orWhere('catatan', 'like', "%{$q}%")
+                ->orWhere('catatan_penugasan', 'like', "%{$q}%")
+                ->orWhereHas('itineraryDays', fn ($d) => $d->where('catatan', 'like', "%{$q}%"))))
 				->latest()
 				->get();
 
