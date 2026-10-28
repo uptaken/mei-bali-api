@@ -158,14 +158,7 @@ class ExportController extends Controller
 					->orWhereHas('assignments', fn ($a) => $a->where('supplier_id', $request->query('supplier_id')))))
 				->when($request->filled('date_from'), fn ($query) => $query->whereDate('tanggal_mulai', '>=', $request->query('date_from')))
 				->when($request->filled('date_to'), fn ($query) => $query->whereDate('tanggal_mulai', '<=', $request->query('date_to')))
-				->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
-					->where('kode', 'like', "%{$q}%")
-					->orWhere('kode_group', 'like', "%{$q}%")
-					->orWhere('nama_order', 'like', "%{$q}%")
-					->orWhere('destinasi', 'like', "%{$q}%")
-                ->orWhere('catatan', 'like', "%{$q}%")
-                ->orWhere('catatan_penugasan', 'like', "%{$q}%")
-                ->orWhereHas('itineraryDays', fn ($d) => $d->where('catatan', 'like', "%{$q}%"))))
+				->when($q !== '', fn ($query) => $query->search($q))
 				->latest()
 				->get();
 

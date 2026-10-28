@@ -8,6 +8,7 @@ use App\Enums\OrderType;
 use App\Enums\PayableStatus;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -109,6 +110,34 @@ class Order extends Model
     public function itineraryDays(): HasMany
     {
         return $this->hasMany(OrderItineraryDay::class)->orderBy('hari');
+    }
+
+    /**
+     * Pencarian teks bebas untuk daftar order dan export: kode, nama, destinasi, semua catatan, itinerary
+     * (jemput/drop, aktivitas, supplier tur) dan add-on (produk, catatan, supplier).
+     */
+    public function scopeSearch(Builder $query, string $q): Builder
+    {
+        $like = "%{$q}%";
+
+        return $query->where(fn ($w) => $w
+            ->where('kode', 'like', $like)
+            ->orWhere('kode_group', 'like', $like)
+            ->orWhere('nama_order', 'like', $like)
+            ->orWhere('destinasi', 'like', $like)
+            ->orWhere('catatan', 'like', $like)
+            ->orWhere('catatan_penugasan', 'like', $like)
+            ->orWhereHas('itineraryDays', fn ($d) => $d
+                ->where('catatan', 'like', $like)
+                ->orWhere('tempat_penjemputan', 'like', $like)
+                ->orWhere('tempat_drop_akhir', 'like', $like)
+                ->orWhereHas('activities', fn ($a) => $a
+                    ->where('aktivitas', 'like', $like)
+                    ->orWhere('supplier_tur', 'like', $like)))
+            ->orWhereHas('addOns', fn ($a) => $a
+                ->where('catatan', 'like', $like)
+                ->orWhere('supplier_nama', 'like', $like)
+                ->orWhereHas('product', fn ($p) => $p->where('nama', 'like', $like))));
     }
 
     public function addOns(): HasMany
