@@ -295,7 +295,7 @@ class OrderAndPayablesTest extends TestCase
 
         \Illuminate\Support\Facades\Bus::assertDispatched(
             \App\Jobs\SendWhatsAppMessageJob::class,
-            fn ($job) => $job->phone === '081200000010' && str_contains($job->message, 'Halo Wayan'),
+            fn ($job) => $job->phone === '081200000010' && str_contains($job->message, 'Nama supir : Wayan'),
         );
         $this->assertSame('Info Terkirim', $response->json('order.status'));
         $this->assertNotEmpty($response->json('order.assignments'));

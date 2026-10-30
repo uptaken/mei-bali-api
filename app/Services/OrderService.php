@@ -46,6 +46,7 @@ class OrderService
         'dewasa' => 'dewasa',
         'anak' => 'anak',
         'catatan' => 'catatan',
+        'catatanPenugasan' => 'catatan_penugasan',
         'tanggalPemakaian' => 'tanggal_pemakaian',
     ];
 
@@ -371,6 +372,7 @@ class OrderService
             'tempat_penjemputan' => $day['tempatPenjemputan'] ?? null,
             'waktu_drop_akhir' => $day['waktuDropAkhir'] ?? null,
             'tempat_drop_akhir' => $day['tempatDropAkhir'] ?? null,
+            'durasi_id' => ($day['durasiId'] ?? null) ?: null,
             'catatan' => $day['catatan'] ?? null,
         ], matchBy: 'hari');
 

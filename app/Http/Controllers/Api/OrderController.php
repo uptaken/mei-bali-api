@@ -40,7 +40,7 @@ class OrderController extends Controller
 
         $arrOrder = Order::query()
             ->with(['client', 'supplier', 'vehicle', 'assignments', 'events' => fn ($query) => $query->select('id', 'order_id', 'kind', 'actor_id', 'at', 'detail')->with('actor:id,nama')->orderBy('id'), 'itineraryDays' => function ($query) {
-							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir', 'catatan',)
+							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir', 'durasi_id', 'catatan',)
 								->with([ 'activities', ])
 								->withSum('activities as totalBiaya', 'biaya');
 						}, 'addOns', 'ticketRows', 'guests', 'layananDetail', 'invoices' => function ($query) {
@@ -200,6 +200,7 @@ class OrderController extends Controller
             'dewasa' => ['nullable', 'integer', 'min:0'],
             'anak' => ['nullable', 'integer', 'min:0'],
             'catatan' => ['nullable', 'string'],
+            'catatanPenugasan' => ['nullable', 'string'],
             'tanggalPemakaian' => ['nullable', 'date'],
 
             'tamu' => ['array'],
@@ -219,6 +220,7 @@ class OrderController extends Controller
             'itinerary.*.tempatPenjemputan' => ['nullable', 'string'],
             'itinerary.*.waktuDropAkhir' => ['nullable', 'string'],
             'itinerary.*.tempatDropAkhir' => ['nullable', 'string'],
+            'itinerary.*.durasiId' => ['nullable'],
             'itinerary.*.catatan' => ['nullable', 'string'],
             'itinerary.*.aktivitas' => ['array'],
             'itinerary.*.aktivitas.*.id' => ['nullable'],
@@ -274,7 +276,7 @@ class OrderController extends Controller
 
         // Operator hanya menugaskan mobil/supplier/driver: bagian lain dari order yang ikut terkirim diabaikan.
         if (! $request->user()->role->canCreateOrder()) {
-            $data = Arr::only($data, ['assignments']);
+            $data = Arr::only($data, ['assignments', 'catatanPenugasan']);
         }
 
 				$order = $this->orderService->update($order, $data, $request->user());

@@ -7,7 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Order;
 use App\Models\WhatsAppTemplate;
-use App\Support\LayananWhatsApp;
+use App\Models\Supplier;
+use App\Support\OrderWhatsApp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -17,14 +18,24 @@ use App\Http\Controllers\BaseController;
 /** Ports src/components/WaSupplierDialog.tsx to a real send. */
 class WhatsAppController extends BaseController
 {
-    /** POST /api/orders/{order}/send-wa-supplier */
-    public function sendSupplierConfirmation(Request $request, Order $order): JsonResponse
+    /** GET /api/orders/{order}/wa-supplier-preview — the exact message that send-wa-supplier would queue. */
+    public function previewSupplierConfirmation(Order $order): JsonResponse
     {
-        $order->load(['assignments.supplier', 'assignments.vehicle', 'itineraryDays', 'layananDetail']);
+        $built = $this->buildMessage($order);
+        if ($built instanceof JsonResponse) {
+            return $built;
+        }
+
+        return response()->json(['template' => $built['template'], 'message' => $built['message']]);
+    }
+
+    /** @return array{supplier: Supplier, template: string, message: string}|JsonResponse a 422 when it cannot be built */
+    private function buildMessage(Order $order): array|JsonResponse
+    {
+        $order->load(['assignments.supplier', 'assignments.vehicle']);
 
         $assignment = $order->assignments->first();
         $supplier = $assignment?->supplier;
-        $vehicle = $assignment?->vehicle;
 
         if (! $supplier || ! $supplier->telepon) {
             return response()->json([
@@ -32,29 +43,22 @@ class WhatsAppController extends BaseController
             ], 422);
         }
 
-        $isLayanan = $order->tipe->value === 'layanan';
-        $templateName = ($isLayanan ? LayananWhatsApp::templateName($order->sub_tipe) : null) ?? 'Konfirmasi Supplier';
-        $template = WhatsAppTemplate::where('nama', $templateName)->first();
-        if (! $template) {
-            return response()->json(['message' => "Template WA \"{$templateName}\" belum ada di Master."], 422);
+        $built = OrderWhatsApp::build($order, $supplier, $assignment->vehicle);
+        if ($built['message'] === null) {
+            return response()->json(['message' => "Template WA \"{$built['template']}\" belum ada di Master."], 422);
         }
 
-        $jemput = match (true) {
-            $order->tipe->value === 'tour' => $order->itineraryDays->first()?->tempat_penjemputan ?? $order->destinasi ?? '-',
-            $order->tipe->value === 'ticket' => $order->kota ?? $order->nama_order ?? '-',
-            $order->sub_tipe?->value === 'check_in' => $order->layananDetail?->hotel_drop_off ?? $order->kota ?? '-',
-            default => $order->layananDetail?->pick_up_point ?? $order->kota ?? '-',
-        };
+        return ['supplier' => $supplier, ...$built];
+    }
 
-        $message = $template->render($templateName === 'Konfirmasi Supplier' ? [
-            'nama_supplier' => $supplier->nama,
-            'kode_order' => $order->kode,
-            'tanggal' => optional($order->tanggal_mulai)->translatedFormat('d M Y') ?? '-',
-            'jam' => $order->jam_mulai ?? '-',
-            'tempat_jemput' => $jemput,
-            'jumlah_tamu' => ($order->dewasa + $order->anak).' pax',
-            'tipe_mobil' => $vehicle?->nama ?? '(mobil)',
-        ] : LayananWhatsApp::variables($order));
+    /** POST /api/orders/{order}/send-wa-supplier */
+    public function sendSupplierConfirmation(Request $request, Order $order): JsonResponse
+    {
+        $built = $this->buildMessage($order);
+        if ($built instanceof JsonResponse) {
+            return $built;
+        }
+        ['supplier' => $supplier, 'message' => $message] = $built;
 
         SendWhatsAppMessageJob::dispatch($supplier->telepon, $message, $supplier->nama, $order, $request->user()->id)->afterResponse();
 
