@@ -53,6 +53,7 @@ class OrderWhatsAppTest extends TestCase
         $supplier = Supplier::create(['kode' => 'SUP-97', 'nama' => 'CV Bali', 'nama_driver' => 'Komang', 'telepon' => '081200000097']);
         $vehicle = Vehicle::create(['nama' => 'Hiace', 'kapasitas' => 8]);
         $language = \App\Models\Language::create(['kode' => 'MD', 'nama' => 'Mandarin']);
+        $product = \App\Models\Product::create(['product_category_id' => \App\Models\ProductCategory::create(['nama' => 'Makan'])->id, 'nama' => 'Dinner Jimbaran', 'harga_jual' => 0, 'modal' => 0]);
         $fd = \App\Models\Duration::create(['label' => 'FD 10 JAM', 'perkiraanJam' => '10 jam']);
 
         $id = $this->actingAs($admin, 'sanctum')->postJson('/api/orders', [
@@ -60,11 +61,12 @@ class OrderWhatsAppTest extends TestCase
             'bahasaId' => (string) $language->id, 'dewasa' => 2, 'anak' => 1, 'catatan' => 'PAKE KAMERA', 'catatanPenugasan' => 'AMBIL KEMBALI KAMERA',
             'tamu' => [['nama' => 'MENG JIAO YANG', 'kategori' => 'Dewasa']],
             'itinerary' => [
-                ['hari' => 1, 'waktuPenjemputan' => '08:45', 'tempatPenjemputan' => 'The Kuta Beach Heritage Hotel', 'tempatDropAkhir' => 'The Kuta Beach Heritage Hotel', 'durasiId' => $fd->id,
+                ['hari' => 1, 'waktuPenjemputan' => '08:45', 'tempatPenjemputan' => 'The Kuta Beach Heritage Hotel', 'tempatDropAkhir' => 'The Kuta Beach Heritage Hotel', 'waktuDropAkhir' => '18:30', 'durasiId' => $fd->id,
                     'aktivitas' => [['aktivitas' => 'Pandawa Road (Include Tiket)', 'biaya' => 0], ['aktivitas' => 'Uluwatu', 'biaya' => 0]]],
                 ['hari' => 2, 'tempatDropAkhir' => 'Senetan Villas', 'catatan' => 'Bawa jas hujan', 'aktivitas' => [['aktivitas' => 'Tegalalang', 'biaya' => 0]]],
                 ['hari' => 3, 'aktivitas' => [['aktivitas' => 'Lovina Dolphin', 'biaya' => 0]]],
             ],
+            'addOns' => [['produkId' => $product->id, 'qty' => 2, 'modal' => 0, 'catatan' => 'tanpa seafood']],
             'assignments' => [['hari' => 1, 'vehicleId' => $vehicle->id, 'supplierId' => $supplier->id, 'biayaTransportModal' => 0]],
         ])->assertCreated()->json('id');
 
@@ -74,10 +76,10 @@ class OrderWhatsAppTest extends TestCase
         $preview = $this->actingAs($admin, 'sanctum')->getJson("/api/orders/{$id}/wa-supplier-preview")->assertOk();
         $this->assertSame('Info Tour', $preview->json('template'));
         $this->assertSame(
-            "Paket Bali 3D\n17 - 19 Agt 2026\n(MANDARIN)\n\n*(PAKE KAMERA)*\n\nNama supir : Komang\nNama Tamu : MENG JIAO YANG\nTotal : 2 adl + 1 chd\n\nRute :\n"
-            ."17 Agt 2026\n*(FD 10 JAM)*\n* Jemput di The Kuta Beach Heritage Hotel\nJam 08.45\n* Pandawa Road (Include Tiket)\n* Uluwatu\n* Drop The Kuta Beach Heritage Hotel\n\n"
+            "Paket Bali 3D\n17 - 19 Agt 2026\n(MANDARIN)\n\n*(PAKE KAMERA)*\n\nNama supir : Komang\nMobil : Hiace\nNama Tamu : MENG JIAO YANG\nTotal : 2 adl + 1 chd\n\nRute :\n"
+            ."17 Agt 2026\n*(FD 10 JAM)*\n* Jemput di The Kuta Beach Heritage Hotel\nJam 08.45\n* Pandawa Road (Include Tiket)\n* Uluwatu\n* Drop The Kuta Beach Heritage Hotel\nJam 18.30\n\n"
             ."18 Agt 2026\n* Tegalalang\n* Drop Senetan Villas\nCatatan: Bawa jas hujan\n\n"
-            ."19 Agt 2026\n* Lovina Dolphin\n\n*(AMBIL KEMBALI KAMERA)*",
+            ."19 Agt 2026\n* Lovina Dolphin\n\nAdd-On :\n* Dinner Jimbaran x2 (tanpa seafood)\n\n*(AMBIL KEMBALI KAMERA)*",
             $preview->json('message'),
         );
 

@@ -24,8 +24,8 @@ class OrderWhatsApp
     public const TEMPLATES = [
         'tour' => [
             'nama' => 'Info Tour',
-            'isi' => "{{nama_paket}}\n{{tanggal}}\n{{bahasa}}\n\n{{catatan_order}}\n\nNama supir : {{nama_supir}}\nNama Tamu : {{nama_tamu}}\nTotal : {{jumlah_pax}}\n\nRute :\n{{rute}}\n\n{{catatan_penugasan}}",
-            'variabel' => ['nama_paket', 'tanggal', 'bahasa', 'catatan_order', 'nama_supir', 'nama_tamu', 'jumlah_pax', 'rute', 'catatan_penugasan'],
+            'isi' => "{{nama_paket}}\n{{tanggal}}\n{{bahasa}}\n\n{{catatan_order}}\n\nNama supir : {{nama_supir}}\nMobil : {{tipe_mobil}}\nNama Tamu : {{nama_tamu}}\nTotal : {{jumlah_pax}}\n\nRute :\n{{rute}}\n\n{{add_on}}\n\n{{catatan_penugasan}}",
+            'variabel' => ['nama_paket', 'tanggal', 'bahasa', 'catatan_order', 'nama_supir', 'tipe_mobil', 'nama_tamu', 'jumlah_pax', 'rute', 'add_on', 'catatan_penugasan'],
         ],
         'check_in' => [
             'nama' => 'Info Check In',
@@ -58,7 +58,7 @@ class OrderWhatsApp
      */
     public static function build(Order $order, ?Supplier $supplier, ?Vehicle $vehicle): array
     {
-        $order->loadMissing(['itineraryDays.activities', 'guests', 'layananDetail']);
+        $order->loadMissing(['itineraryDays.activities', 'guests', 'layananDetail', 'addOns.product']);
         $name = self::templateName($order);
         $template = WhatsAppTemplate::where('nama', $name)->first();
 
@@ -68,7 +68,7 @@ class OrderWhatsApp
 
         $variables = match ($name) {
             self::FALLBACK_TEMPLATE => self::confirmationVariables($order, $supplier, $vehicle),
-            self::TEMPLATES['tour']['nama'] => self::tourVariables($order, $supplier),
+            self::TEMPLATES['tour']['nama'] => self::tourVariables($order, $supplier, $vehicle),
             default => self::layananVariables($order),
         };
 
@@ -118,7 +118,7 @@ class OrderWhatsApp
         ];
     }
 
-    private static function tourVariables(Order $order, ?Supplier $supplier): array
+    private static function tourVariables(Order $order, ?Supplier $supplier, ?Vehicle $vehicle): array
     {
         $days = $order->itineraryDays->sortBy('hari')->values();
         $durations = Duration::whereIn('id', $days->pluck('durasi_id')->filter())->pluck('label', 'id');
@@ -140,6 +140,9 @@ class OrderWhatsApp
             }
             if (filled($day->tempat_drop_akhir)) {
                 $lines[] = "* Drop {$day->tempat_drop_akhir}";
+                if (filled($day->waktu_drop_akhir)) {
+                    $lines[] = 'Jam '.str_replace(':', '.', $day->waktu_drop_akhir);
+                }
             }
             if (filled($day->catatan)) {
                 $lines[] = "Catatan: {$day->catatan}";
@@ -148,6 +151,7 @@ class OrderWhatsApp
             return implode("\n", $lines);
         })->implode("\n\n");
 
+        $addOns = $order->addOns->map(fn ($addOn) => '* '.($addOn->product?->nama ?? 'Add-on').($addOn->qty > 1 ? " x{$addOn->qty}" : '').(filled($addOn->catatan) ? " ({$addOn->catatan})" : ''));
         $adults = $order->dewasa.' adl';
         $bahasa = $order->bahasa_id ? Language::find($order->bahasa_id)?->nama : null;
 
@@ -157,9 +161,11 @@ class OrderWhatsApp
             'bahasa' => filled($bahasa) ? '('.strtoupper($bahasa).')' : '',
             'catatan_order' => $note($order->catatan),
             'nama_supir' => $supplier ? ($supplier->nama_driver ?: $supplier->nama) : '-',
+            'tipe_mobil' => $vehicle?->nama ?? '-',
             'nama_tamu' => $order->guests->pluck('nama')->filter()->implode("\n") ?: '-',
             'jumlah_pax' => $order->anak > 0 ? "{$adults} + {$order->anak} chd" : $adults,
             'rute' => $rute ?: '-',
+            'add_on' => $addOns->isEmpty() ? '' : "Add-On :\n".$addOns->implode("\n"),
             'catatan_penugasan' => $note($order->catatan_penugasan),
         ];
     }
