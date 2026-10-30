@@ -11,6 +11,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\WhatsAppTemplate;
+use App\Support\LayananWhatsApp;
 use App\Services\OrderService;
 use Illuminate\Database\Seeder;
 
@@ -62,6 +63,7 @@ class DatabaseSeeder extends Seeder
         foreach ([
             ['nama' => 'Konfirmasi Supplier', 'kategori' => 'Operasional', 'isi' => 'Halo {{nama_supplier}}, mohon konfirmasi ketersediaan untuk order {{kode_order}} pada {{tanggal}} pukul {{jam}}. Titik jemput: {{tempat_jemput}}. Jumlah tamu: {{jumlah_tamu}}. Mobil: {{tipe_mobil}}. Terima kasih.', 'variabel' => ['nama_supplier', 'kode_order', 'tanggal', 'jam', 'tempat_jemput', 'jumlah_tamu', 'tipe_mobil']],
             ['nama' => 'Reminder Pembayaran', 'kategori' => 'Finance', 'isi' => 'Yth. {{nama_client}}, invoice {{no_invoice}} untuk order {{kode_order}} sebesar {{total}} akan jatuh tempo {{jatuh_tempo}}. Sisa tagihan: {{sisa}}. Mohon konfirmasi setelah transfer. Terima kasih.', 'variabel' => ['nama_client', 'no_invoice', 'kode_order', 'total', 'jatuh_tempo', 'sisa']],
+            ...array_map(fn ($t) => ['nama' => $t['nama'], 'kategori' => 'Operasional', 'isi' => $t['isi'], 'variabel' => $t['variabel']], array_values(LayananWhatsApp::TEMPLATES)),
         ] as $t) {
             WhatsAppTemplate::create($t);
         }

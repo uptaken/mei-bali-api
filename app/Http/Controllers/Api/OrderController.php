@@ -72,6 +72,7 @@ class OrderController extends Controller
 						$order->layananDetail->dropOffPoint = $order->layananDetail->drop_off_point;
 						$order->layananDetail->jamJemput = $order->layananDetail->jam_jemput;
 						$order->layananDetail->infoFlight = $order->layananDetail->info_flight;
+						$order->layananDetail->jenisPenerbangan = $order->layananDetail->jenis_penerbangan;
 						$order->layananDetail->jumlahPax = $order->layananDetail->jumlah_pax;
 						$order->layananDetail->biayaModal = $order->layananDetail->biaya_modal;
 						$order->layananDetail->supplierNama = $order->layananDetail->supplier_nama;

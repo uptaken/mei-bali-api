@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendWhatsAppMessageJob;
 use App\Models\Order;
 use App\Models\WhatsAppTemplate;
+use App\Support\LayananWhatsApp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -31,9 +32,11 @@ class WhatsAppController extends BaseController
             ], 422);
         }
 
-        $template = WhatsAppTemplate::where('nama', 'Konfirmasi Supplier')->first();
+        $isLayanan = $order->tipe->value === 'layanan';
+        $templateName = ($isLayanan ? LayananWhatsApp::templateName($order->sub_tipe) : null) ?? 'Konfirmasi Supplier';
+        $template = WhatsAppTemplate::where('nama', $templateName)->first();
         if (! $template) {
-            return response()->json(['message' => 'Template WA "Konfirmasi Supplier" belum ada di Master.'], 422);
+            return response()->json(['message' => "Template WA \"{$templateName}\" belum ada di Master."], 422);
         }
 
         $jemput = match (true) {
@@ -43,7 +46,7 @@ class WhatsAppController extends BaseController
             default => $order->layananDetail?->pick_up_point ?? $order->kota ?? '-',
         };
 
-        $message = $template->render([
+        $message = $template->render($templateName === 'Konfirmasi Supplier' ? [
             'nama_supplier' => $supplier->nama,
             'kode_order' => $order->kode,
             'tanggal' => optional($order->tanggal_mulai)->translatedFormat('d M Y') ?? '-',
@@ -51,7 +54,7 @@ class WhatsAppController extends BaseController
             'tempat_jemput' => $jemput,
             'jumlah_tamu' => ($order->dewasa + $order->anak).' pax',
             'tipe_mobil' => $vehicle?->nama ?? '(mobil)',
-        ]);
+        ] : LayananWhatsApp::variables($order));
 
         SendWhatsAppMessageJob::dispatch($supplier->telepon, $message, $supplier->nama, $order, $request->user()->id)->afterResponse();
 

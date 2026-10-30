@@ -19,6 +19,7 @@ class OrderLayananDetail extends Model
         'drop_off_point',
         'jam_jemput',
         'info_flight',
+        'jenis_penerbangan',
         'jumlah_pax',
         'biaya_modal',
         'supplier_nama',

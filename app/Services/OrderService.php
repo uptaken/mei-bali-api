@@ -353,6 +353,7 @@ class OrderService
                 'drop_off_point' => $detail['dropOffPoint'] ?? null,
                 'jam_jemput' => $detail['jamJemput'] ?? null,
                 'info_flight' => $detail['infoFlight'] ?? null,
+                'jenis_penerbangan' => $detail['jenisPenerbangan'] ?? null,
                 'jumlah_pax' => $detail['jumlahPax'] ?? 1,
                 'biaya_modal' => $detail['biayaModal'] ?? 0,
                 'supplier_nama' => $detail['supplierNama'] ?? null,
