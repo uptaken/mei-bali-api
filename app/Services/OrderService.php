@@ -383,6 +383,8 @@ class OrderService
                 'skip_biaya' => $activity['skipBiaya'] ?? false,
                 'supplier_tur' => $activity['supplierTur'] ?? null,
                 'urutan' => $position,
+                // Payloads that do not mention a booker (older clients) leave it as it was.
+                ...(array_key_exists('bookedBy', $activity) ? ['booked_by' => $activity['bookedBy'] ?: null] : []),
             ]);
         }
     }

@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
 use App\Enums\PayableStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 /**
  * Endpoint order: daftar, detail, buat, ubah, selesai, dan alur pembatalan.
@@ -22,7 +25,7 @@ class OrderController extends Controller
     /** Relasi yang selalu dimuat saat order dikirim ke frontend, agar respons create/update/show seragam. */
     public const WITH = [
         'client', 'assignments.vehicle', 'assignments.supplier', 'guests',
-        'itineraryDays.activities', 'addOns.product', 'ticketRows', 'layananDetail',
+        'itineraryDays.activities.booker', 'addOns.product', 'ticketRows', 'layananDetail',
         'events.actor', 'invoices.lines',
     ];
 
@@ -41,7 +44,7 @@ class OrderController extends Controller
         $arrOrder = Order::query()
             ->with(['client', 'supplier', 'vehicle', 'assignments', 'events' => fn ($query) => $query->select('id', 'order_id', 'kind', 'actor_id', 'at', 'detail')->with('actor:id,nama')->orderBy('id'), 'itineraryDays' => function ($query) {
 							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir', 'durasi_id', 'catatan',)
-								->with([ 'activities', ])
+								->with([ 'activities.booker', ])
 								->withSum('activities as totalBiaya', 'biaya');
 						}, 'addOns', 'ticketRows', 'guests', 'layananDetail', 'invoices' => function ($query) {
 							$query->select('id', 'order_id', 'total', 'sisa', 'status', 'catatan',)
@@ -228,6 +231,7 @@ class OrderController extends Controller
             'itinerary.*.aktivitas.*.biaya' => ['nullable', 'integer', 'min:0'],
             'itinerary.*.aktivitas.*.skipBiaya' => ['nullable', 'boolean'],
             'itinerary.*.aktivitas.*.supplierTur' => ['nullable', 'string'],
+            'itinerary.*.aktivitas.*.bookedBy' => ['nullable', Rule::exists('users', 'id')->whereIn('role', [UserRole::Admin->value, UserRole::Operator->value])],
 
             'addOns' => ['array'],
             'addOns.*.id' => ['nullable'],
@@ -249,6 +253,14 @@ class OrderController extends Controller
 
             'layananDetail' => ['nullable', 'array'],
         ];
+    }
+
+    /** GET /api/booking-staff — Admin dan Operator yang bisa dipilih sebagai pembooking aktivitas (daftar /users hanya untuk Super Admin). */
+    public function bookingStaff(): JsonResponse
+    {
+        return response()->json(
+            User::whereIn('role', [UserRole::Admin->value, UserRole::Operator->value])->orderBy('nama')->get(['id', 'nama', 'role']),
+        );
     }
 
     /** POST /api/orders — ports OrderReview.tsx's confirm(). Only Admin/Super Admin (role middleware on the route). */

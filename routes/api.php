@@ -130,6 +130,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/orders/{order}', [OrderController::class, 'update']);
 
     Route::middleware('role:Admin,Super Admin')->group(function () {
+        Route::get('/booking-staff', [OrderController::class, 'bookingStaff']);
         Route::post('/orders', [OrderController::class, 'store']);
 				Route::patch('/orders/lines/{order}', [OrderController::class, 'updateLines']);
         Route::patch('/orders/{order}/operational', [OrderOperationalController::class, 'update']);
