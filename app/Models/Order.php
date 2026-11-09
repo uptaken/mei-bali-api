@@ -9,6 +9,7 @@ use App\Enums\PayableStatus;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -163,6 +164,20 @@ class Order extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    /** First day of service: the Tour start, the Layanan date, or the day a Ticket is used. */
+    public function serviceStart(): ?Carbon
+    {
+        $date = $this->tipe === OrderType::Ticket ? ($this->tanggal_pemakaian ?? $this->tanggal_mulai) : $this->tanggal_mulai;
+
+        return $date?->copy()->startOfDay();
+    }
+
+    /** Last day of service: a multi-day Tour runs one day per itinerary day, everything else is a single day. */
+    public function serviceEnd(): ?Carbon
+    {
+        return $this->serviceStart()?->addDays($this->assignmentDayCount() - 1);
     }
 
     /** How many day-rows Operational & Reservasi should show — multi-day only for Tour. */

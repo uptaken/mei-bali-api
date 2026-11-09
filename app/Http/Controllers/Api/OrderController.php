@@ -317,10 +317,10 @@ class OrderController extends Controller
 				return $order->load(self::WITH);
 		}
 
-    /** POST /api/orders/{order}/selesai — hanya untuk order yang sedang Berlangsung; dicatat di Riwayat. */
+    /** POST /api/orders/{order}/selesai — penutupan manual untuk order Info Terkirim atau Berlangsung; dicatat di Riwayat. */
     public function markSelesai(Request $request, Order $order): Order
     {
-        abort_unless($order->status === OrderStatus::Berlangsung, 422, 'Order belum berstatus Berlangsung.');
+        abort_unless(in_array($order->status, [OrderStatus::InfoTerkirim, OrderStatus::Berlangsung], true), 422, 'Order belum berstatus Info Terkirim atau Berlangsung.');
 
         $order->update(['status' => OrderStatus::Selesai->value, 'updated_by' => $request->user()->id]);
         $order->events()->create(['kind' => 'selesai', 'actor_id' => $request->user()->id, 'at' => now()]);
