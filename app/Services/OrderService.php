@@ -121,8 +121,12 @@ class OrderService
             $assignedBefore = $this->assignmentSignature($order);
             $before = $this->snapshotData($order);
 
-            // tipe and subTipe are locked once the Order exists.
-            $order->update(Arr::except($this->columns($data), 'sub_tipe'));
+            // tipe is locked once the Order exists; a Layanan's subTipe (Check In / Check Out / Transfer) may still be corrected.
+            $columns = $this->columns($data);
+            if ($order->tipe !== OrderType::Layanan || empty($columns['sub_tipe'])) {
+                unset($columns['sub_tipe']);
+            }
+            $order->update($columns);
 
             $this->saveChildren($order, $data);
             $this->refreshDerivedFields($order);
@@ -188,11 +192,11 @@ class OrderService
         'client_id' => 'Client', 'nama_order' => 'Nama Order', 'kode_group' => 'Kode Group', 'tanggal_mulai' => 'Tanggal Mulai',
         'tanggal_pemakaian' => 'Tanggal Pemakaian', 'jam_mulai' => 'Jam Mulai', 'durasi_hari' => 'Durasi', 'destinasi' => 'Destinasi',
         'bahasa_id' => 'Bahasa', 'kota' => 'Kota', 'kota_termasuk' => 'Kota Termasuk', 'paket_id' => 'Paket', 'dewasa' => 'Jumlah Dewasa',
-        'anak' => 'Jumlah Anak', 'catatan' => 'Catatan', 'catatan_penugasan' => 'Catatan Penugasan',
+        'anak' => 'Jumlah Anak', 'catatan' => 'Catatan', 'catatan_penugasan' => 'Catatan Penugasan', 'sub_tipe' => 'Jenis Layanan',
     ];
 
     /** Kolom pendek yang nilai lamanya layak ditampilkan ("Nama Order: A → B"); sisanya cukup nama kolomnya. */
-    private const SHOW_VALUES = ['nama_order', 'kode_group', 'tanggal_mulai', 'tanggal_pemakaian', 'jam_mulai', 'durasi_hari', 'destinasi', 'kota', 'dewasa', 'anak'];
+    private const SHOW_VALUES = ['nama_order', 'kode_group', 'tanggal_mulai', 'tanggal_pemakaian', 'jam_mulai', 'durasi_hari', 'destinasi', 'kota', 'dewasa', 'anak', 'sub_tipe'];
 
     /**
      * Ringkasan perubahan untuk Riwayat, mis. "Nama Order: A → B, Tanggal Mulai: 2026-11-20 → 2026-11-25, Itinerary Hari 2".
@@ -209,7 +213,9 @@ class OrderService
             if (($old ?? '') == ($new ?? '')) {
                 continue;
             }
-            $labels[] = in_array($column, self::SHOW_VALUES, true) ? "{$label}: {$show($old)} → {$show($new)}" : $label;
+            // sub_tipe is stored as check_in/check_out/transfer; Riwayat shows the name people know.
+            $text = $column === 'sub_tipe' ? fn ($v) => self::LAYANAN_LABELS[$v] ?? $show($v) : $show;
+            $labels[] = in_array($column, self::SHOW_VALUES, true) ? "{$label}: {$text($old)} → {$text($new)}" : $label;
         }
 
         if ($before['guests'] != $after['guests']) {
@@ -548,16 +554,15 @@ class OrderService
 
     /**
      * Takes the existing line for $deskripsi out of $unclaimed. The Layanan main line carries the
-     * guest's name ("Transfer — Mr. John"), so after a rename it is found by its label instead of
-     * being left behind next to a new line.
+     * jenis and the guest's name ("Transfer — Mr. John"), so after a rename or a change of jenis it is
+     * found by any Layanan label instead of being left behind next to a new line.
      */
     private function claimLine(Collection $unclaimed, string $deskripsi): ?InvoiceLine
     {
         $index = $unclaimed->search(fn ($line) => $line->deskripsi === $deskripsi);
 
-        if ($index === false) {
-            $label = Arr::first(self::LAYANAN_LABELS, fn ($label) => str_starts_with($deskripsi, "{$label} — "));
-            $index = $label ? $unclaimed->search(fn ($line) => str_starts_with($line->deskripsi, "{$label} — ")) : false;
+        if ($index === false && Arr::first(self::LAYANAN_LABELS, fn ($label) => str_starts_with($deskripsi, "{$label} — "))) {
+            $index = $unclaimed->search(fn ($line) => Arr::first(self::LAYANAN_LABELS, fn ($label) => str_starts_with($line->deskripsi, "{$label} — ")) !== null);
         }
 
         return $index === false ? null : $unclaimed->pull($index);

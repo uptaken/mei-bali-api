@@ -65,7 +65,7 @@ class DatabaseSeeder extends Seeder
             ['nama' => 'Reminder Pembayaran', 'kategori' => 'Finance', 'isi' => 'Yth. {{nama_client}}, invoice {{no_invoice}} untuk order {{kode_order}} sebesar {{total}} akan jatuh tempo {{jatuh_tempo}}. Sisa tagihan: {{sisa}}. Mohon konfirmasi setelah transfer. Terima kasih.', 'variabel' => ['nama_client', 'no_invoice', 'kode_order', 'total', 'jatuh_tempo', 'sisa']],
             ...array_map(fn ($t) => ['nama' => $t['nama'], 'kategori' => 'Operasional', 'isi' => $t['isi'], 'variabel' => $t['variabel']], array_values(OrderWhatsApp::TEMPLATES)),
         ] as $t) {
-            WhatsAppTemplate::create($t);
+            WhatsAppTemplate::updateOrCreate(['nama' => $t['nama']], $t);
         }
 
         // $this->seedDemoOrders($clients, $suppliers, $vehicles, $products, $superAdmin);

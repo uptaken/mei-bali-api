@@ -278,7 +278,7 @@ class OrderController extends Controller
         return response()->json($this->visibleTo($order->load(self::WITH), $request), 201);
     }
 
-    /** PATCH /api/orders/{order} — menu Ubah: seluruh isi order disinkronkan lewat OrderService. Tipe dan subTipe tidak bisa diganti, sama seperti di frontend. */
+    /** PATCH /api/orders/{order} — menu Ubah: seluruh isi order disinkronkan lewat OrderService. Tipe tidak bisa diganti; subTipe hanya bisa dikoreksi untuk order Layanan. */
     public function update(Request $request, Order $order): Order
     {
         $data = $request->validate($this->orderRules(isCreate: false));
