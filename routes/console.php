@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Orders move to Berlangsung on their first day and to Selesai after their last day.
-Schedule::command('orders:advance-status')->dailyAt('00:05');
+Schedule::command('orders:advance-status')->dailyAt('00:05')->appendOutputTo(storage_path('logs/orders-advance-status.log'));

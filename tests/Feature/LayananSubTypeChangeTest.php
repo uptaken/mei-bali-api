@@ -23,6 +23,7 @@ class LayananSubTypeChangeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo('2026-11-20 09:00:00');
         $this->admin = User::factory()->create(['role' => UserRole::Admin->value]);
         $this->client = Client::create(['kode' => 'CLI-1', 'nama' => 'Klien']);
     }
@@ -83,6 +84,24 @@ class LayananSubTypeChangeTest extends TestCase
         $this->assertSame('check_in', Order::findOrFail($id)->sub_tipe->value);
 
         $this->actingAs($this->admin, 'sanctum')->patchJson("/api/orders/{$id}", ['subTipe' => 'ticket'])->assertUnprocessable();
+    }
+
+    public function test_the_jenis_is_locked_once_the_service_day_has_come(): void
+    {
+        $id = $this->create('check_in');
+        $change = fn () => $this->actingAs($this->admin, 'sanctum')->patchJson("/api/orders/{$id}", $this->layanan('transfer', ['pickUpPoint' => 'Bandara', 'dropOffPoint' => 'Ubud', 'jamJemput' => '09:00']));
+
+        // The day before: still correctable. Rewind so the same order can be tried on its service day.
+        Order::findOrFail($id)->update(['tanggal_mulai' => '2026-11-20']);
+        $change()->assertUnprocessable()->assertJsonValidationErrors('subTipe');
+        $this->assertSame('check_in', Order::findOrFail($id)->sub_tipe->value);
+
+        // Saving other changes on a running order with its own jenis still works.
+        $this->actingAs($this->admin, 'sanctum')->patchJson("/api/orders/{$id}", $this->layanan('check_in', ['hotelDropOff' => 'Hotel Baru']) + ['catatan' => 'Tamu minta kursi bayi'])->assertOk();
+
+        // A Berlangsung order is locked even with a date still ahead (status moved by hand).
+        Order::findOrFail($id)->update(['tanggal_mulai' => '2026-12-01', 'status' => 'Berlangsung']);
+        $change()->assertUnprocessable();
     }
 
     public function test_saving_the_same_jenis_is_still_not_an_edit(): void

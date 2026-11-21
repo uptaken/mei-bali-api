@@ -174,6 +174,14 @@ class Order extends Model
         return $date?->copy()->startOfDay();
     }
 
+    /** An order is running once its first service day has come (the daily job may not have moved its status yet) or it is already Berlangsung. */
+    public function hasStarted(): bool
+    {
+        $start = $this->serviceStart();
+
+        return $this->status === OrderStatus::Berlangsung || ($start !== null && $start->lte(today()));
+    }
+
     /** Last day of service: a multi-day Tour runs one day per itinerary day, everything else is a single day. */
     public function serviceEnd(): ?Carbon
     {

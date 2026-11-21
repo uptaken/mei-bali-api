@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -122,5 +123,31 @@ class AdvanceOrderStatusesTest extends TestCase
         $this->assertSame('Selesai', $sent->refresh()->status->value);
         $this->assertSame($admin->id, $sent->events()->first()->actor_id);
         $this->assertSame('Siap Kirim WA', $waiting->refresh()->status->value);
+    }
+
+    public function test_the_scheduler_runs_the_command_every_day_at_00_05(): void
+    {
+        $event = collect(app(Schedule::class)->events())->first(fn ($e) => str_contains($e->command, 'orders:advance-status'));
+
+        $this->assertNotNull($event, 'orders:advance-status is not on the schedule');
+        $this->assertSame('5 0 * * *', $event->expression);
+        foreach (['2026-11-11 00:05:00' => true, '2026-11-11 00:06:00' => false, '2026-11-11 12:05:00' => false, '2026-11-12 00:05:00' => true] as $moment => $due) {
+            $this->travelTo($moment);
+            $this->assertSame($due, $event->isDue(app()), $moment);
+        }
+    }
+
+    public function test_a_tour_goes_through_its_whole_life_one_daily_run_at_a_time(): void
+    {
+        $tour = $this->order('tour', 'Info Terkirim', ['tanggal_mulai' => '2026-11-12'], 3); // runs 12, 13 and 14 November
+
+        foreach (['2026-11-11' => 'Info Terkirim', '2026-11-12' => 'Berlangsung', '2026-11-14' => 'Berlangsung', '2026-11-15' => 'Selesai'] as $day => $expected) {
+            $this->travelTo("{$day} 00:05:00");
+            $this->artisan('orders:advance-status')->assertSuccessful();
+            $this->assertSame($expected, $tour->refresh()->status->value, $day);
+        }
+
+        $this->assertSame(['berlangsung', 'selesai'], $tour->events()->pluck('kind')->all());
+        $this->assertNull($tour->events()->first()->actor_id);
     }
 }

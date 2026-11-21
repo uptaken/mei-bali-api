@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Creates and edits an Order together with everything that hangs off it (guests, assignments,
@@ -125,6 +126,10 @@ class OrderService
             $columns = $this->columns($data);
             if ($order->tipe !== OrderType::Layanan || empty($columns['sub_tipe'])) {
                 unset($columns['sub_tipe']);
+            }
+            // ...but only until the service day: a running order already went out as that jenis.
+            if (isset($columns['sub_tipe']) && $columns['sub_tipe'] !== $order->sub_tipe?->value && $order->hasStarted()) {
+                throw ValidationException::withMessages(['subTipe' => ['Jenis layanan tidak bisa diganti karena order sudah berjalan.']]);
             }
             $order->update($columns);
 
