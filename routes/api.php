@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WAController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\WhatsAppTemplateController;
+use App\Http\Controllers\Api\SettingController;
 
 use App\Http\Controllers\ExportController;
 
@@ -31,6 +32,8 @@ use App\Http\Controllers\ExportController;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+
+Route::get('/setting', [SettingController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // WhatsApp session control and PDF export — authenticated like everything else (the frontend sends its token).

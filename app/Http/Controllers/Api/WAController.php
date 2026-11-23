@@ -44,6 +44,11 @@ class WAController extends BaseController{
   /** Mulai sesi WhatsApp di gateway (menghasilkan QR bila belum login). */
   public function start_session(Request $request){
     $curl_helper = new CurlHelper();
+
+		$whatsapp_session_setting = Setting::where('key', 'whatsapp_session')->first();
+		$whatsapp_session_setting->value = false;
+		$whatsapp_session_setting->save();
+
     $response = $curl_helper->request($this->wa_url.'/session/start/'.$this->wa_session_id, [
       "Content-Type" => "application/json",
 		], [], "get");
@@ -57,6 +62,11 @@ class WAController extends BaseController{
   /** Putuskan lalu mulai ulang sesi — dipakai untuk berganti nomor/akun WhatsApp. */
   public function restart_session(Request $request){
     $curl_helper = new CurlHelper();
+
+		$whatsapp_session_setting = Setting::where('key', 'whatsapp_session')->first();
+		$whatsapp_session_setting->value = false;
+		$whatsapp_session_setting->save();
+
     $response = $curl_helper->request($this->wa_url.'/session/terminate/'.$this->wa_session_id, [
       "Content-Type" => "application/json",
 		], [], "get");
@@ -74,6 +84,11 @@ class WAController extends BaseController{
   /** Putuskan sesi WhatsApp tanpa memulai ulang. */
   public function terminate_session(Request $request){
     $curl_helper = new CurlHelper();
+
+		$whatsapp_session_setting = Setting::where('key', 'whatsapp_session')->first();
+		$whatsapp_session_setting->value = false;
+		$whatsapp_session_setting->save();
+
     $response = $curl_helper->request($this->wa_url.'/session/terminate/'.$this->wa_session_id, [
       "Content-Type" => "application/json",
 		], [], "get");
@@ -113,6 +128,14 @@ class WAController extends BaseController{
   /** Status sesi; `data.success` bernilai true bila WhatsApp sudah terhubung dan siap kirim. */
   public function status_session(Request $request){
     $curl_helper = new CurlHelper();
+
+		$whatsapp_session_setting = Setting::where('key', 'whatsapp_session')->first();
+		if(!empty($whatsapp_session_setting) && $whatsapp_session_setting->value == 1)
+			return $this->get_data_helper->return_data($request, [
+				'status' => 'success',
+				'data' => $whatsapp_session_setting,
+			]);
+
     $response = $curl_helper->request($this->wa_url.'/session/status/'.$this->wa_session_id, [
       "Content-Type" => "application/json",
 		], [], "get");
@@ -126,6 +149,8 @@ class WAController extends BaseController{
   /** Info akun WhatsApp yang terhubung (nama, nomor, foto profil). Tanpa error bila sesi belum login. */
   public function get_state(Request $request){
     $curl_helper = new CurlHelper();
+		$whatsapp_session_setting = Setting::where('key', 'whatsapp_session')->first();
+
     $response = $curl_helper->request($this->wa_url.'/client/getClassInfo/'.$this->wa_session_id, [
       "Content-Type" => "application/json",
 		], [], "get");
@@ -140,6 +165,9 @@ class WAController extends BaseController{
       if(!empty($response_prof_pic["result"]))
         $response["profile_picture"] = $response_prof_pic["result"];
     }
+
+		$whatsapp_session_setting->value = !empty($contactId);
+		$whatsapp_session_setting->save();
 
     return $this->get_data_helper->return_data($request, [
       'status' => 'success',
