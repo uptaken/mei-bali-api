@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
 use App\Enums\PayableStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 /**
  * Endpoint order: daftar, detail, buat, ubah, selesai, dan alur pembatalan.
@@ -22,7 +25,7 @@ class OrderController extends Controller
     /** Relasi yang selalu dimuat saat order dikirim ke frontend, agar respons create/update/show seragam. */
     public const WITH = [
         'client', 'assignments.vehicle', 'assignments.supplier', 'guests',
-        'itineraryDays.activities', 'addOns.product', 'ticketRows', 'layananDetail',
+        'itineraryDays.activities.booker', 'addOns.product', 'ticketRows', 'layananDetail',
         'events.actor', 'invoices.lines',
     ];
 
@@ -40,8 +43,8 @@ class OrderController extends Controller
 
         $arrOrder = Order::query()
             ->with(['client', 'supplier', 'vehicle', 'assignments', 'events' => fn ($query) => $query->select('id', 'order_id', 'kind', 'actor_id', 'at', 'detail')->with('actor:id,nama')->orderBy('id'), 'itineraryDays' => function ($query) {
-							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir', 'catatan',)
-								->with([ 'activities', ])
+							$query->select('id', 'order_id', 'hari', 'waktu_penjemputan', 'tempat_penjemputan', 'waktu_drop_akhir', 'tempat_drop_akhir', 'durasi_id', 'catatan',)
+								->with([ 'activities.booker', ])
 								->withSum('activities as totalBiaya', 'biaya');
 						}, 'addOns', 'ticketRows', 'guests', 'layananDetail', 'invoices' => function ($query) {
 							$query->select('id', 'order_id', 'total', 'sisa', 'status', 'catatan',)
@@ -56,14 +59,7 @@ class OrderController extends Controller
             ->when($request->filled('supplier_id'), fn ($query) => $query->where('supplier_id', $request->query('supplier_id')))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('tanggal_mulai', '>=', $request->query('date_from')))
             ->when($request->filled('date_to'), fn ($query) => $query->whereDate('tanggal_mulai', '<=', $request->query('date_to')))
-            ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
-                ->where('kode', 'like', "%{$q}%")
-                ->orWhere('kode_group', 'like', "%{$q}%")
-                ->orWhere('nama_order', 'like', "%{$q}%")
-                ->orWhere('destinasi', 'like', "%{$q}%")
-                ->orWhere('catatan', 'like', "%{$q}%")
-                ->orWhere('catatan_penugasan', 'like', "%{$q}%")
-                ->orWhereHas('itineraryDays', fn ($d) => $d->where('catatan', 'like', "%{$q}%"))))
+            ->when($q !== '', fn ($query) => $query->search($q))
             ->latest()
             ->paginate($request->integer('per_page', 20));
 
@@ -79,6 +75,7 @@ class OrderController extends Controller
 						$order->layananDetail->dropOffPoint = $order->layananDetail->drop_off_point;
 						$order->layananDetail->jamJemput = $order->layananDetail->jam_jemput;
 						$order->layananDetail->infoFlight = $order->layananDetail->info_flight;
+						$order->layananDetail->jenisPenerbangan = $order->layananDetail->jenis_penerbangan;
 						$order->layananDetail->jumlahPax = $order->layananDetail->jumlah_pax;
 						$order->layananDetail->biayaModal = $order->layananDetail->biaya_modal;
 						$order->layananDetail->supplierNama = $order->layananDetail->supplier_nama;
@@ -206,6 +203,7 @@ class OrderController extends Controller
             'dewasa' => ['nullable', 'integer', 'min:0'],
             'anak' => ['nullable', 'integer', 'min:0'],
             'catatan' => ['nullable', 'string'],
+            'catatanPenugasan' => ['nullable', 'string'],
             'tanggalPemakaian' => ['nullable', 'date'],
 
             'tamu' => ['array'],
@@ -225,6 +223,7 @@ class OrderController extends Controller
             'itinerary.*.tempatPenjemputan' => ['nullable', 'string'],
             'itinerary.*.waktuDropAkhir' => ['nullable', 'string'],
             'itinerary.*.tempatDropAkhir' => ['nullable', 'string'],
+            'itinerary.*.durasiId' => ['nullable'],
             'itinerary.*.catatan' => ['nullable', 'string'],
             'itinerary.*.aktivitas' => ['array'],
             'itinerary.*.aktivitas.*.id' => ['nullable'],
@@ -232,6 +231,7 @@ class OrderController extends Controller
             'itinerary.*.aktivitas.*.biaya' => ['nullable', 'integer', 'min:0'],
             'itinerary.*.aktivitas.*.skipBiaya' => ['nullable', 'boolean'],
             'itinerary.*.aktivitas.*.supplierTur' => ['nullable', 'string'],
+            'itinerary.*.aktivitas.*.bookedBy' => ['nullable', Rule::exists('users', 'id')->whereIn('role', [UserRole::Admin->value, UserRole::Operator->value])],
 
             'addOns' => ['array'],
             'addOns.*.id' => ['nullable'],
@@ -255,6 +255,14 @@ class OrderController extends Controller
         ];
     }
 
+    /** GET /api/booking-staff — Admin dan Operator yang bisa dipilih sebagai pembooking aktivitas (daftar /users hanya untuk Super Admin). */
+    public function bookingStaff(): JsonResponse
+    {
+        return response()->json(
+            User::whereIn('role', [UserRole::Admin->value, UserRole::Operator->value])->orderBy('nama')->get(['id', 'nama', 'role']),
+        );
+    }
+
     /** POST /api/orders — ports OrderReview.tsx's confirm(). Only Admin/Super Admin (role middleware on the route). */
     public function store(Request $request): JsonResponse
     {
@@ -270,7 +278,7 @@ class OrderController extends Controller
         return response()->json($this->visibleTo($order->load(self::WITH), $request), 201);
     }
 
-    /** PATCH /api/orders/{order} — menu Ubah: seluruh isi order disinkronkan lewat OrderService. Tipe dan subTipe tidak bisa diganti, sama seperti di frontend. */
+    /** PATCH /api/orders/{order} — menu Ubah: seluruh isi order disinkronkan lewat OrderService. Tipe tidak bisa diganti; subTipe hanya bisa dikoreksi untuk order Layanan. */
     public function update(Request $request, Order $order): Order
     {
         $data = $request->validate($this->orderRules(isCreate: false));
@@ -280,7 +288,7 @@ class OrderController extends Controller
 
         // Operator hanya menugaskan mobil/supplier/driver: bagian lain dari order yang ikut terkirim diabaikan.
         if (! $request->user()->role->canCreateOrder()) {
-            $data = Arr::only($data, ['assignments']);
+            $data = Arr::only($data, ['assignments', 'catatanPenugasan']);
         }
 
 				$order = $this->orderService->update($order, $data, $request->user());
@@ -321,10 +329,10 @@ class OrderController extends Controller
 				return $order->load(self::WITH);
 		}
 
-    /** POST /api/orders/{order}/selesai — hanya untuk order yang sedang Berlangsung; dicatat di Riwayat. */
+    /** POST /api/orders/{order}/selesai — penutupan manual untuk order Info Terkirim atau Berlangsung; dicatat di Riwayat. */
     public function markSelesai(Request $request, Order $order): Order
     {
-        abort_unless($order->status === OrderStatus::Berlangsung, 422, 'Order belum berstatus Berlangsung.');
+        abort_unless(in_array($order->status, [OrderStatus::InfoTerkirim, OrderStatus::Berlangsung], true), 422, 'Order belum berstatus Info Terkirim atau Berlangsung.');
 
         $order->update(['status' => OrderStatus::Selesai->value, 'updated_by' => $request->user()->id]);
         $order->events()->create(['kind' => 'selesai', 'actor_id' => $request->user()->id, 'at' => now()]);

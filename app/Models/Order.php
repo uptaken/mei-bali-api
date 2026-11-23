@@ -8,6 +8,8 @@ use App\Enums\OrderType;
 use App\Enums\PayableStatus;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -111,6 +113,34 @@ class Order extends Model
         return $this->hasMany(OrderItineraryDay::class)->orderBy('hari');
     }
 
+    /**
+     * Pencarian teks bebas untuk daftar order dan export: kode, nama, destinasi, semua catatan, itinerary
+     * (jemput/drop, aktivitas, supplier tur) dan add-on (produk, catatan, supplier).
+     */
+    public function scopeSearch(Builder $query, string $q): Builder
+    {
+        $like = "%{$q}%";
+
+        return $query->where(fn ($w) => $w
+            ->where('kode', 'like', $like)
+            ->orWhere('kode_group', 'like', $like)
+            ->orWhere('nama_order', 'like', $like)
+            ->orWhere('destinasi', 'like', $like)
+            ->orWhere('catatan', 'like', $like)
+            ->orWhere('catatan_penugasan', 'like', $like)
+            ->orWhereHas('itineraryDays', fn ($d) => $d
+                ->where('catatan', 'like', $like)
+                ->orWhere('tempat_penjemputan', 'like', $like)
+                ->orWhere('tempat_drop_akhir', 'like', $like)
+                ->orWhereHas('activities', fn ($a) => $a
+                    ->where('aktivitas', 'like', $like)
+                    ->orWhere('supplier_tur', 'like', $like)))
+            ->orWhereHas('addOns', fn ($a) => $a
+                ->where('catatan', 'like', $like)
+                ->orWhere('supplier_nama', 'like', $like)
+                ->orWhereHas('product', fn ($p) => $p->where('nama', 'like', $like))));
+    }
+
     public function addOns(): HasMany
     {
         return $this->hasMany(OrderAddOn::class);
@@ -134,6 +164,28 @@ class Order extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    /** First day of service: the Tour start, the Layanan date, or the day a Ticket is used. */
+    public function serviceStart(): ?Carbon
+    {
+        $date = $this->tipe === OrderType::Ticket ? ($this->tanggal_pemakaian ?? $this->tanggal_mulai) : $this->tanggal_mulai;
+
+        return $date?->copy()->startOfDay();
+    }
+
+    /** An order is running once its first service day has come (the daily job may not have moved its status yet) or it is already Berlangsung. */
+    public function hasStarted(): bool
+    {
+        $start = $this->serviceStart();
+
+        return $this->status === OrderStatus::Berlangsung || ($start !== null && $start->lte(today()));
+    }
+
+    /** Last day of service: a multi-day Tour runs one day per itinerary day, everything else is a single day. */
+    public function serviceEnd(): ?Carbon
+    {
+        return $this->serviceStart()?->addDays($this->assignmentDayCount() - 1);
     }
 
     /** How many day-rows Operational & Reservasi should show — multi-day only for Tour. */

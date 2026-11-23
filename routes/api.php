@@ -125,6 +125,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Orders — Operator may view; only Admin/Super Admin may create/edit (mirrors canCreateOrder()).
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::get('/orders/{order}/wa-supplier-preview', [WhatsAppController::class, 'previewSupplierConfirmation']);
     Route::post('/orders/{order}/send-wa-supplier', [WhatsAppController::class, 'sendSupplierConfirmation']);
 
     // Operator boleh menugaskan mobil/supplier/driver: PATCH order dibuka untuk semua peran, tetapi OrderController::update
@@ -132,6 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/orders/{order}', [OrderController::class, 'update']);
 
     Route::middleware('role:Admin,Super Admin')->group(function () {
+        Route::get('/booking-staff', [OrderController::class, 'bookingStaff']);
         Route::post('/orders', [OrderController::class, 'store']);
 				Route::patch('/orders/lines/{order}', [OrderController::class, 'updateLines']);
         Route::patch('/orders/{order}/operational', [OrderOperationalController::class, 'update']);

@@ -18,6 +18,7 @@ class OrderItineraryDay extends Model
         'tempat_penjemputan',
         'waktu_drop_akhir',
         'tempat_drop_akhir',
+        'durasi_id',
         'catatan',
     ];
 

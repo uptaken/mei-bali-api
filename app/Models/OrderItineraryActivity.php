@@ -18,6 +18,7 @@ class OrderItineraryActivity extends Model
         'biaya',
         'skip_biaya',
         'supplier_tur',
+        'booked_by',
         'urutan',
         'bayar_status',
         'tanggal_bayar',
@@ -31,6 +32,12 @@ class OrderItineraryActivity extends Model
             'bayar_status' => PayableStatus::class,
             'tanggal_bayar' => 'date:Y-m-d',
         ];
+    }
+
+    /** Admin/Operator yang membooking aktivitas ini. Bukan `bookedBy`: di JSON namanya akan bentrok dengan kolom `booked_by`. */
+    public function booker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'booked_by')->select('id', 'nama');
     }
 
     public function day(): BelongsTo

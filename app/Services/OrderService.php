@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Creates and edits an Order together with everything that hangs off it (guests, assignments,
@@ -46,6 +47,7 @@ class OrderService
         'dewasa' => 'dewasa',
         'anak' => 'anak',
         'catatan' => 'catatan',
+        'catatanPenugasan' => 'catatan_penugasan',
         'tanggalPemakaian' => 'tanggal_pemakaian',
     ];
 
@@ -120,8 +122,16 @@ class OrderService
             $assignedBefore = $this->assignmentSignature($order);
             $before = $this->snapshotData($order);
 
-            // tipe and subTipe are locked once the Order exists.
-            $order->update(Arr::except($this->columns($data), 'sub_tipe'));
+            // tipe is locked once the Order exists; a Layanan's subTipe (Check In / Check Out / Transfer) may still be corrected.
+            $columns = $this->columns($data);
+            if ($order->tipe !== OrderType::Layanan || empty($columns['sub_tipe'])) {
+                unset($columns['sub_tipe']);
+            }
+            // ...but only until the service day: a running order already went out as that jenis.
+            if (isset($columns['sub_tipe']) && $columns['sub_tipe'] !== $order->sub_tipe?->value && $order->hasStarted()) {
+                throw ValidationException::withMessages(['subTipe' => ['Jenis layanan tidak bisa diganti karena order sudah berjalan.']]);
+            }
+            $order->update($columns);
 
             $this->saveChildren($order, $data);
             $this->refreshDerivedFields($order);
@@ -187,11 +197,11 @@ class OrderService
         'client_id' => 'Client', 'nama_order' => 'Nama Order', 'kode_group' => 'Kode Group', 'tanggal_mulai' => 'Tanggal Mulai',
         'tanggal_pemakaian' => 'Tanggal Pemakaian', 'jam_mulai' => 'Jam Mulai', 'durasi_hari' => 'Durasi', 'destinasi' => 'Destinasi',
         'bahasa_id' => 'Bahasa', 'kota' => 'Kota', 'kota_termasuk' => 'Kota Termasuk', 'paket_id' => 'Paket', 'dewasa' => 'Jumlah Dewasa',
-        'anak' => 'Jumlah Anak', 'catatan' => 'Catatan', 'catatan_penugasan' => 'Catatan Penugasan',
+        'anak' => 'Jumlah Anak', 'catatan' => 'Catatan', 'catatan_penugasan' => 'Catatan Penugasan', 'sub_tipe' => 'Jenis Layanan',
     ];
 
     /** Kolom pendek yang nilai lamanya layak ditampilkan ("Nama Order: A → B"); sisanya cukup nama kolomnya. */
-    private const SHOW_VALUES = ['nama_order', 'kode_group', 'tanggal_mulai', 'tanggal_pemakaian', 'jam_mulai', 'durasi_hari', 'destinasi', 'kota', 'dewasa', 'anak'];
+    private const SHOW_VALUES = ['nama_order', 'kode_group', 'tanggal_mulai', 'tanggal_pemakaian', 'jam_mulai', 'durasi_hari', 'destinasi', 'kota', 'dewasa', 'anak', 'sub_tipe'];
 
     /**
      * Ringkasan perubahan untuk Riwayat, mis. "Nama Order: A → B, Tanggal Mulai: 2026-11-20 → 2026-11-25, Itinerary Hari 2".
@@ -208,7 +218,9 @@ class OrderService
             if (($old ?? '') == ($new ?? '')) {
                 continue;
             }
-            $labels[] = in_array($column, self::SHOW_VALUES, true) ? "{$label}: {$show($old)} → {$show($new)}" : $label;
+            // sub_tipe is stored as check_in/check_out/transfer; Riwayat shows the name people know.
+            $text = $column === 'sub_tipe' ? fn ($v) => self::LAYANAN_LABELS[$v] ?? $show($v) : $show;
+            $labels[] = in_array($column, self::SHOW_VALUES, true) ? "{$label}: {$text($old)} → {$text($new)}" : $label;
         }
 
         if ($before['guests'] != $after['guests']) {
@@ -353,6 +365,7 @@ class OrderService
                 'drop_off_point' => $detail['dropOffPoint'] ?? null,
                 'jam_jemput' => $detail['jamJemput'] ?? null,
                 'info_flight' => $detail['infoFlight'] ?? null,
+                'jenis_penerbangan' => $detail['jenisPenerbangan'] ?? null,
                 'jumlah_pax' => $detail['jumlahPax'] ?? 1,
                 'biaya_modal' => $detail['biayaModal'] ?? 0,
                 'supplier_nama' => $detail['supplierNama'] ?? null,
@@ -370,6 +383,7 @@ class OrderService
             'tempat_penjemputan' => $day['tempatPenjemputan'] ?? null,
             'waktu_drop_akhir' => $day['waktuDropAkhir'] ?? null,
             'tempat_drop_akhir' => $day['tempatDropAkhir'] ?? null,
+            'durasi_id' => ($day['durasiId'] ?? null) ?: null,
             'catatan' => $day['catatan'] ?? null,
         ], matchBy: 'hari');
 
@@ -380,6 +394,8 @@ class OrderService
                 'skip_biaya' => $activity['skipBiaya'] ?? false,
                 'supplier_tur' => $activity['supplierTur'] ?? null,
                 'urutan' => $position,
+                // Payloads that do not mention a booker (older clients) leave it as it was.
+                ...(array_key_exists('bookedBy', $activity) ? ['booked_by' => $activity['bookedBy'] ?: null] : []),
             ]);
         }
     }
@@ -543,16 +559,15 @@ class OrderService
 
     /**
      * Takes the existing line for $deskripsi out of $unclaimed. The Layanan main line carries the
-     * guest's name ("Transfer — Mr. John"), so after a rename it is found by its label instead of
-     * being left behind next to a new line.
+     * jenis and the guest's name ("Transfer — Mr. John"), so after a rename or a change of jenis it is
+     * found by any Layanan label instead of being left behind next to a new line.
      */
     private function claimLine(Collection $unclaimed, string $deskripsi): ?InvoiceLine
     {
         $index = $unclaimed->search(fn ($line) => $line->deskripsi === $deskripsi);
 
-        if ($index === false) {
-            $label = Arr::first(self::LAYANAN_LABELS, fn ($label) => str_starts_with($deskripsi, "{$label} — "));
-            $index = $label ? $unclaimed->search(fn ($line) => str_starts_with($line->deskripsi, "{$label} — ")) : false;
+        if ($index === false && Arr::first(self::LAYANAN_LABELS, fn ($label) => str_starts_with($deskripsi, "{$label} — "))) {
+            $index = $unclaimed->search(fn ($line) => Arr::first(self::LAYANAN_LABELS, fn ($label) => str_starts_with($line->deskripsi, "{$label} — ")) !== null);
         }
 
         return $index === false ? null : $unclaimed->pull($index);
