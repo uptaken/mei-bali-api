@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\BiayaDefaultController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\WAController;
+use App\Http\Controllers\Api\WA2Controller;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\WhatsAppTemplateController;
 use App\Http\Controllers\Api\SettingController;
@@ -40,14 +41,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Kontrol sesi WhatsApp (QR, status, restart) — dipakai halaman Template WhatsApp.
     Route::prefix('wa')->group(function () {
 
-        Route::get('/start', [WAController::class, 'start_session']);
-        Route::get('/restart', [WAController::class, 'restart_session']);
-        Route::get('/status', [WAController::class, 'status_session']);
-        Route::get('/terminate', [WAController::class, 'terminate_session']);
-        Route::get('/qr', [WAController::class, 'qr_session']);
-        Route::get('/qr/image', [WAController::class, 'qr_image_session']);
-        Route::get('/state', [WAController::class, 'get_state']);
-        Route::get('/number/search', [WAController::class, 'get_number_search']);
+        Route::get('/start', [WA2Controller::class, 'start_session']);
+        Route::get('/restart', [WA2Controller::class, 'restart_session']);
+        Route::get('/status', [WA2Controller::class, 'status_session']);
+        Route::get('/terminate', [WA2Controller::class, 'terminate_session']);
+        Route::get('/qr', [WA2Controller::class, 'qr_session']);
+        Route::get('/qr/image', [WA2Controller::class, 'qr_image_session']);
+        Route::get('/state', [WA2Controller::class, 'get_state']);
+        Route::get('/number/search', [WA2Controller::class, 'get_number_search']);
 
     });
 

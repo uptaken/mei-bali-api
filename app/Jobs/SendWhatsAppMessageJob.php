@@ -33,7 +33,10 @@ class SendWhatsAppMessageJob implements ShouldQueue
         public readonly ?string $toName = null,
         public readonly ?Model $related = null,
         public readonly ?int $sentByUserId = null,
-    ) {}
+    ) {
+
+
+		}
 
     /** WhatsApp wants the number in international form: digits only, with Indonesia's 62 in place of a leading 0 (or added when the 0 is missing). */
     public static function chatId(string $phone): string
@@ -52,19 +55,23 @@ class SendWhatsAppMessageJob implements ShouldQueue
 
     public function handle(CurlHelper $curl): void
     {
-        $gateway = new BaseController();
+			$gateway = new BaseController();
+			$curl_helper = new CurlHelper();
 
-        $response = $curl->request("{$gateway->wa_url}/client/sendMessage/{$gateway->wa_session_id}", [], [
-            'chatId' => self::chatId($this->phone),
-            'contentType' => 'string',
-            'content' => $this->message,
-        ], 'post');
+			$response = $curl_helper->request("{$gateway->wa_url}/api/sendText", [
+				"Content-Type" => "application/json",
+				"X-Api-Key" => env('WA_API_KEY'),
+			], [
+					'chatId' => self::chatId($this->phone),
+					'text' => $this->message,
+					'session' => $gateway->wa_session_id,
+			], 'post');
 
-        if (! is_array($response) || empty($response['success'])) {
-            throw new RuntimeException('Gateway WhatsApp tidak menerima pesan: '.json_encode($response));
-        }
+			if (! is_array($response) || empty($response['success'])) {
+					throw new RuntimeException('Gateway WhatsApp tidak menerima pesan: '.json_encode($response));
+			}
 
-        $this->record('sent', $response);
+			$this->record('sent', $response);
     }
 
     /** Called by the queue once every retry has failed. */
